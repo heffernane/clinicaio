@@ -16,20 +16,20 @@ class Label:
 	def __str__(self):
 		return self.value
 
-# participant id = sub-<label> (for folder names, entities, participants.tsv, etc.s)
+# subject id = sub-<label> (for folder names, entities, participants.tsv, etc.s)
 @dataclass
-class ParticipantId:
+class SubjectId:
 	_id: Label
 	_prefix = "sub-"
 
 	def __init__(self, id: str):
 		if not id.startswith(self._prefix):
-			raise BIDSException(f"BIDS participant ID {id} must start with {self._prefix}")
+			raise BIDSException(f"BIDS subject ID {id} must start with {self._prefix}")
 		
 		try:
 			self._id = Label(id.removeprefix(self._prefix))
 		except BIDSException as e:
-			raise BIDSException(f"BIDS participant id {id} had invalid label (in sub-<label>): {e}")
+			raise BIDSException(f"BIDS subject id {id} had invalid label (in sub-<label>): {e}")
 
 	def __str__(self):
 		return f"{self._prefix}{self._id}"

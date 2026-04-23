@@ -4,21 +4,21 @@ import pytest
 from re import escape
 
 def test_ids():
-    with pytest.raises(BIDSException, match="BIDS participant ID 001 must start with sub-"):
-        ParticipantId("001")
+    with pytest.raises(BIDSException, match="BIDS subject ID 001 must start with sub-"):
+        SubjectId("001")
     with pytest.raises(BIDSException, match="BIDS session ID M000 must start with ses-"):
         SessionId("M000")
     
     with pytest.raises(BIDSException, match="BIDS label can't be empty"):
-        ParticipantId("sub-")
+        SubjectId("sub-")
     with pytest.raises(BIDSException, match="BIDS label can't be empty"):
         SessionId("ses-")
 
-    assert(ParticipantId("sub-123").__str__() == "sub-123")
+    assert(SubjectId("sub-123").__str__() == "sub-123")
     assert(SessionId("ses-123").__str__() == "ses-123")
 
-    with pytest.raises(BIDSException, match=escape("BIDS participant id sub-é had invalid label (in sub-<label>): BIDS label é must be all [a-zA-Z0-9] characters")):
-        ParticipantId("sub-é")
+    with pytest.raises(BIDSException, match=escape("BIDS subject id sub-é had invalid label (in sub-<label>): BIDS label é must be all [a-zA-Z0-9] characters")):
+        SubjectId("sub-é")
     with pytest.raises(BIDSException, match=escape("BIDS session id ses-é had invalid label (in ses-<label>): BIDS label é must be all [a-zA-Z0-9] characters")):
         SessionId("ses-é")
 

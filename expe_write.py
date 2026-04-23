@@ -39,13 +39,13 @@ session2 = Session(
     )
 )
 
-participant1 = Participant(
+subject1 = Subject(
     sessions={session.id: session for session in [session1, session2]},
-    id=ParticipantId("sub-0001"),
-    info=ParticipantInfo(other_fields={
-        "part1": 345,
-        "part2": "texte",
-        "part3": None,
+    id=SubjectId("sub-0001"),
+    info=SubjectInfo(other_fields={
+        "subj1": 345,
+        "subj2": "texte",
+        "subj3": None,
     })
 )
 
@@ -56,7 +56,7 @@ dataset=BIDSDataset(
         version=BIDSVersion("1.10.0"),
         dataset_type=BIDSDatasetType.RAW,
     ),
-    participants={participant.id: participant for participant in [participant1]},
+    subjects={subject.id: subject for subject in [subject1]},
 )
 
 
@@ -64,7 +64,7 @@ dataset.write_dataset()
 with dataset.write_root_file("README", write_binary=False) as readme:
     print("README content",file=readme)
 
-with session1.write_images(dataset, participant1) as images_writer:
+with session1.write_images(dataset, subject1) as images_writer:
     image1 = Image(
         nifti_extension=FileExtension.NII_GZ,
         entities=Entities.from_str("trc-18FFDG_task-rest"),

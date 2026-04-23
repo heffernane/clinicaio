@@ -8,7 +8,7 @@ from typing import Optional, Iterable
 
 @dataclass
 class ImageQuery:
-	participants: set[ParticipantId]
+	subjects: set[SubjectId]
 	sessions: set[SessionId]
 	data_type: Optional[DataType]
 	entities: Entities
@@ -17,7 +17,7 @@ class ImageQuery:
 	# FIXME: builder pattern?
 	def __init__(
 		self,
-		participants: set[str | ParticipantId] | list[str | ParticipantId] = [],
+		subjects: set[str | SubjectId] | list[str | SubjectId] = [],
 		sessions: set[str | SessionId] | list[str | SessionId] = [],
 		# FIXME: allow multiple data types at once?
 		data_type: Optional[DataType] = None,
@@ -30,7 +30,7 @@ class ImageQuery:
 	):
 		type_or_type_from_val = lambda v, typ: v if isinstance(v, typ) else typ(v)
 
-		self.participants = set(type_or_type_from_val(id, ParticipantId) for id in participants)
+		self.subjects = set(type_or_type_from_val(id, SubjectId) for id in subjects)
 		self.sessions = set(type_or_type_from_val(id, SessionId) for id in sessions)
 		self.data_type = data_type
 
@@ -58,13 +58,13 @@ class ImageQuery:
 		self,
 		dataset: BIDSDataset
 	) -> Iterable[ImageQueryResult]:
-		filtered_participants = dataset.all_participants() if len(self.participants) == 0 else (dataset.participant_by_id(id) for id in self.participants)
+		filtered_subjects = dataset.all_subjects() if len(self.subjects) == 0 else (dataset.subject_by_id(id) for id in self.subjects)
 		
-		for participant in filtered_participants:
-			if participant is None:
+		for subject in filtered_subjects:
+			if subject is None:
 				continue
 
-			filtered_sessions = participant.all_sessions() if len(self.sessions) == 0 else (participant.session_by_id(id) for id in self.sessions)
+			filtered_sessions = subject.all_sessions() if len(self.sessions) == 0 else (subject.session_by_id(id) for id in self.sessions)
 
 			for session in filtered_sessions:
 				if session is None:
@@ -79,11 +79,11 @@ class ImageQuery:
 					if len(self.entities) > 0 and (not image.entities.contains_all(self.entities)):
 						continue
 					
-					yield ImageQueryResult(participant=participant, session=session, data_type=data_type, image=image)
+					yield ImageQueryResult(subject=subject, session=session, data_type=data_type, image=image)
 
 @dataclass
 class ImageQueryResult:
-	participant: Participant
+	subject: Subject
 	session: Session
 	data_type: DataType
 	image: Image
