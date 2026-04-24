@@ -13,7 +13,7 @@ __all__ = [
 
 def _read_tsv_as_df(tsv_path: Path) -> pd.DataFrame:
 	try:
-		df = pd.read_csv(tsv_path, sep='\t')
+		df = pd.read_csv(tsv_path, sep='\t', dtype=object)
 		#df = df.replace("n/a", None, inplace=True)
 		df = df.replace(math.nan, None, inplace=True)
 		

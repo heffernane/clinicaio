@@ -7,7 +7,7 @@ from clinicaio.query import *
 # test_bids_read_path=Path("/path/to/BIDS")
 from _env import test_bids_read_path
 
-dataset = BIDSDataset.populate_from_dir(bids_dir=test_bids_read_path, sessions_info=False)
+dataset = BIDSDataset.populate_from_dir(bids_dir=test_bids_read_path, sessions_info=True, subjects_info=True)
 #print(dataset)
 
 print(dataset.description)
@@ -52,11 +52,11 @@ def title(text: str):
 
 ################### Give me all tsv files
 title("TSV files")
-subjects_info = [subject.info for subject in dataset.all_subjects()]
+subjects_info = [subject.info for subject in dataset.all_subjects() if subject.info is not None]
 print(subjects_info)
-sessions_info = [session.info for session in dataset.all_sessions()]
+sessions_info = [session.info for session in dataset.all_sessions() if session.info is not None]
 print(sessions_info)
-scans_info = [image.scan_info for image in dataset.all_images()]
+scans_info = [image.scan_info for image in dataset.all_images() if image.scan_info is not None]
 print(scans_info)
 
 ################### Give me all images with this tracer (ex 18FFDG)
@@ -69,7 +69,8 @@ for image in images:
 ################### Give me all T1w images paths
 title("All T1w images paths")
 t1w_paths = dataset.query_images_nifti_paths(ImageQuery(suffix="T1w"))
-print(t1w_paths)
+for path in t1w_paths:
+	print(path)
 
 ################### Give me all modalities for this one subject
 subject_id = SubjectId("sub-ADNI027S0074")

@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from fileinput import filename
 from typing import Optional, Iterable, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-# pydantic
 
 import os
+
+from pydantic import Field, PrivateAttr
+
+from clinicaio.model import Model
 
 from .types import *
 from .entities import *
@@ -74,7 +77,7 @@ class BIDSDataset :
 			)
 
 	@classmethod
-	def populate_from_dir(cls, bids_dir: Path, sessions_info: bool = False, subjects_info: bool = False) -> BIDSDataset:
+	def populate_from_dir(cls, bids_dir: Path, sessions_info: bool, subjects_info: bool) -> BIDSDataset:
 		unhandled_entries: list[str] = []
 
 		try:
@@ -290,15 +293,14 @@ class SubjectInfo:
 
 # aka Subject
 # populated from sub-* folders
-@dataclass
-class Subject:
-	parent_dataset: BIDSDataset
+class Subject(Model):
+	parent_dataset: BIDSDataset = Field(repr=False)
 
 	id: SubjectId
 	# https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file
 	# from participants.tsv, matched by participant_id, if available (all Optional[Type] = None, if line missing or n/a value)
 	info: Optional[SubjectInfo] = None
-	_sessions: dict[SessionId, Session] = field(default_factory=lambda: {})
+	_sessions: dict[SessionId, Session] = PrivateAttr(default_factory=lambda: {})
 
 	def _get_full_path(self) -> Path:
 		return self.parent_dataset._get_full_path() / f"{self.id}"
@@ -440,12 +442,11 @@ class ImagesWriter:
 				rows=rows,
 			)
 
-@dataclass
-class Session:
-	parent_subject: Subject
+class Session(Model):
+	parent_subject: Subject = Field(repr=False)
 
 	id: SessionId
-	_images: dict[DataType, list[Image]] = field(default_factory=lambda: {})
+	_images: dict[DataType, list[Image]] = PrivateAttr(default_factory=lambda: {})
 	info: Optional[SessionInfo] = None
 
 	def _get_full_path(self) -> Path:
@@ -515,9 +516,8 @@ class ImageScanInfo:
 	# TODO: proper typing for fields defined in BIDS specification
 	other_fields: dict[str, Any]
 
-@dataclass
-class Image:
-	parent_session: Session
+class Image(Model):
+	parent_session: Session = Field(repr=False)
 	data_type: DataType
 
 	nifti_extension: FileExtension
