@@ -142,8 +142,7 @@ class BIDSDataset :
 			except BIDSException as e:
 				raise BIDSException(f"Found invalid subject/subject ID {bids_child.name}: {e}")
 			
-			subject = Subject(parent_dataset=dataset, _sessions={}, id=subject_id)
-			dataset._subjects[subject.id] = subject
+			subject = dataset.add_subject(id=subject_id, info=None)
 
 			# Populate subject's sessions
 			for subject_child in os.scandir(bids_child.path):
@@ -163,8 +162,7 @@ class BIDSDataset :
 				except BIDSException as e:
 					raise BIDSException(f"Found invalid session ID {subject_child.name}: {e}")
 				
-				session = Session(parent_subject=subject, id=session_id, _images={}, info=None)
-				subject._sessions[session.id] = session
+				session = subject.add_session(id=session_id, info=None)
 
 				# Populate the session's images, per-datatype
 				for session_child in os.scandir(subject_child.path):
@@ -176,8 +174,6 @@ class BIDSDataset :
 
 					if not session_child.is_dir():
 						raise BIDSException(f"Found data type entry {bids_child.name}/{subject_child.name}/{session_child.name} that was not a directory")
-
-					session_images: list[Image] = []
 
 					for data_type_child in os.scandir(session_child.path):
 						try:
@@ -225,18 +221,14 @@ class BIDSDataset :
 						if not extension.is_nifti():
 							continue
 
-						image = Image(
-							parent_session=session, 
+						session._add_image(
 							data_type=data_type,
 
 							nifti_extension=extension, 
 							entities=entities, 
 							suffix=suffix,
+							scan_info=None,
 						)
-						session_images.append(image)
-
-
-					session._images[data_type] = session_images
 			
 			if sessions_info:
 				BIDSDataset._populate_sessions_info(
@@ -267,7 +259,7 @@ class BIDSDataset :
 		except FileExistsError:
 			raise BIDSException(f"can't write root dataset file {filename} as it already exists")
 		
-	def add_subject(self, id: SubjectId, info: SubjectInfo) -> Subject:
+	def add_subject(self, id: SubjectId, info: Optional[SubjectInfo]) -> Subject:
 		if id in self._subjects:
 			raise BIDSException(f"tried to add subject of ID {id} but it already exists within this dataset")
 
@@ -355,7 +347,7 @@ class Subject:
 	def _get_full_path(self) -> Path:
 		return self.parent_dataset._get_full_path() / f"{self.id}"
 
-	def add_session(self, id: SessionId, info: SessionInfo) -> Session:
+	def add_session(self, id: SessionId, info: Optional[SessionInfo]) -> Session:
 		if id in self._sessions:
 			raise BIDSException(f"tried to add session of ID {id} but it already exists within this subject")
 		
@@ -412,40 +404,18 @@ class SessionInfo:
 @dataclass
 class ImagesWriter:
 	session: Session
-
-	# the key is the path of the image file relative to the session directory
-	_scan_infos: dict[str, ImageScanInfo] = field(default_factory=lambda: {})
 	
 	def write_image(
 		self, 
 		data_type: DataType,
 		nifti_extension: FileExtension,
 		entities: Entities,
-		suffix: Suffix,
-		scan_info: ImageScanInfo,
+		suffix: Optional[Suffix],
+		scan_info: Optional[ImageScanInfo],
 	) -> Image:
-		if not nifti_extension.is_nifti():
-			raise BIDSException(f"provided non-NIFTI file extension {nifti_extension} when adding image to session")
-
-		image = Image(
-			parent_session=self.session,
-			data_type=data_type,
-			nifti_extension=nifti_extension,
-			entities=entities,
-			suffix=suffix,
-			scan_info=scan_info
-		)
-
-		if data_type not in self.session._images:
-			self.session._images[data_type] = []
-
-		self.session._images[data_type].append(image)
+		image = self.session._add_image(data_type, nifti_extension, entities, suffix, scan_info)
 
 		session_path = self.session._get_full_path()
-		if image.scan_info is not None:
-			image_nifti_path = image.get_nifti_image_path()
-			image_relative_path = image_nifti_path.relative_to(session_path)
-			self._scan_infos[str(image_relative_path)] = image.scan_info
 
 		data_type_folder_path = session_path / f"{data_type}"
 		try:
@@ -465,12 +435,22 @@ class ImagesWriter:
 		if all(v is None for v in [exc_type, exc, tb]):
 			sub_id = self.session.parent_subject.id
 			ses_id = self.session.id
-			scans_tsv_path = self.session._get_full_path() / f"{sub_id}_{ses_id}_scans.tsv"
+			session_path = self.session._get_full_path()
+			scans_tsv_path = session_path / f"{sub_id}_{ses_id}_scans.tsv"
 
+			rows = (
+				({} if image.scan_info is None else image.scan_info.other_fields)
+				| { "filename": str(image.get_nifti_image_path().relative_to(session_path)) }
+				for image in self.session.all_images()
+			)
+
+			# We need to write the scans.tsv at the very end of the ImagesWriter "with ...: " scope because all the images
+			# may not have the same fields, so the TSV header must be the union of all of them done once we know all
+			# the images to write
 			_write_rows_to_tsv(
 				scans_tsv_path,
 				first_column_name="filename",
-				rows=(scan_info.other_fields | {"filename": filename} for filename, scan_info in self._scan_infos.items()),
+				rows=rows,
 			)
 
 @dataclass
@@ -506,6 +486,33 @@ class Session:
 			raise BIDSException(f"BIDS session folder {session_path} can't be written as it already exists")
 		except FileNotFoundError:
 			raise BIDSException(f"BIDS session folder {session_path} can't be written as one of its parent folders is missing")
+		
+	def _add_image(
+		self,
+		data_type: DataType,
+		nifti_extension: FileExtension,
+		entities: Entities,
+		suffix: Optional[Suffix],
+		scan_info: Optional[ImageScanInfo],
+	) -> Image:
+		if not nifti_extension.is_nifti():
+			raise BIDSException(f"provided non-NIFTI file extension {nifti_extension} when adding image to session")
+
+		image = Image(
+			parent_session=self,
+			data_type=data_type,
+			nifti_extension=nifti_extension,
+			entities=entities,
+			suffix=suffix,
+			scan_info=scan_info
+		)
+
+		if data_type not in self._images:
+			self._images[data_type] = []
+
+		self._images[data_type].append(image)
+
+		return image
 
 	def write_images(self) -> ImagesWriter:
 		return ImagesWriter(session=self)
