@@ -45,43 +45,8 @@ class BIDSDataset :
 	def _get_full_path(self) -> Path:
 		return self._bids_path
 
-
-	# read sessions.tsv and fill out info in all sessions
-	@staticmethod
-	def _populate_sessions_info(subject_dir: Path, subject_id: SubjectId, sessions: dict[SessionId, Session]):
-		sessions_tsv_path = Path(subject_dir) / f"{subject_id}_sessions.tsv"
-		if not os.path.exists(sessions_tsv_path):
-			return
-		
-		sessions_tsv_df = _read_tsv_as_df(sessions_tsv_path)
-		if "session_id" not in sessions_tsv_df.columns:
-			raise BIDSException(f"found sessions.tsv file {sessions_tsv_path} without required session_id column")
-
-		for df_row in sessions_tsv_df.itertuples(index=False):
-			session_id = df_row.session_id
-			if session_id == None:
-				continue
-			try:
-				session_id = SessionId(str(session_id))
-			except BIDSException as e:
-				raise BIDSException(f"found invalid session ID {session_id} in sessions.tsv file {sessions_tsv_path}: {e}")
-			
-			try:
-				session = sessions[session_id]
-			except KeyError:
-				continue
-				#raise BIDSException(f"could not find session of ID {session_id} referenced by TSV file {sessions_tsv_path}")
-
-			info: dict[str, Any] = df_row._asdict()
-			session.info = SessionInfo(
-				acquisition_time=info.get("acq_time"),
-				pathology=info.get("pathology"),
-				other_fields=info
-			)
-
-	@staticmethod
-	def _populate_subjects_info(bids_dir: Path, subjects: dict[SubjectId, Subject]):
-		participants_tsv_path = bids_dir / "participants.tsv"
+	def _populate_subjects_info_from_tsv(self):
+		participants_tsv_path = self._get_full_path() / "participants.tsv"
 		if not os.path.exists(participants_tsv_path):
 			return
 		
@@ -98,9 +63,8 @@ class BIDSDataset :
 			except BIDSException as e:
 				raise BIDSException(f"found invalid subject ID {subject_id} in TSV file {participants_tsv_path}: {e}")
 			
-			try:
-				subject = subjects[subject_id]
-			except KeyError:
+			subject = self.subject_by_id(subject_id)
+			if subject is None:
 				continue
 				#raise BIDSException(f"could not find subject of ID {subject_id} referenced by TSV file {participants_tsv_path}")
 
@@ -231,18 +195,10 @@ class BIDSDataset :
 						)
 			
 			if sessions_info:
-				BIDSDataset._populate_sessions_info(
-					subject_dir=Path(bids_child.path),
-					subject_id=subject.id,
-					sessions=subject._sessions
-				)
+				subject._populate_sessions_info_from_tsv()
 		
 		if subjects_info:
-			BIDSDataset._populate_subjects_info(
-				bids_dir=bids_dir,
-				subjects=dataset._subjects
-			)
-
+			dataset._populate_subjects_info_from_tsv()
 
 		unhandled_entries = [str(Path(entry).relative_to(bids_dir)) for entry in unhandled_entries]
 		print("UNHANDLED =", unhandled_entries)
@@ -390,6 +346,37 @@ class Subject:
 			first_column_name="session_id",
 			rows=(session.info.other_fields | {"session_id": session.id} for session in self.all_sessions() if session.info is not None),
 		 )
+
+	# read the subject's sessions.tsv and fill out info in all sessions
+	def _populate_sessions_info_from_tsv(self):
+		sessions_tsv_path = self._get_full_path() / f"{self.id}_sessions.tsv"
+		if not os.path.exists(sessions_tsv_path):
+			return
+		
+		sessions_tsv_df = _read_tsv_as_df(sessions_tsv_path)
+		if "session_id" not in sessions_tsv_df.columns:
+			raise BIDSException(f"found sessions.tsv file {sessions_tsv_path} without required session_id column")
+
+		for df_row in sessions_tsv_df.itertuples(index=False):
+			session_id = df_row.session_id
+			if session_id == None:
+				continue
+			try:
+				session_id = SessionId(str(session_id))
+			except BIDSException as e:
+				raise BIDSException(f"found invalid session ID {session_id} in sessions.tsv file {sessions_tsv_path}: {e}")
+			
+			session = self.session_by_id(session_id)
+			if session is None:
+				continue
+				#raise BIDSException(f"could not find session of ID {session_id} referenced by TSV file {sessions_tsv_path}")
+
+			info: dict[str, Any] = df_row._asdict()
+			session.info = SessionInfo(
+				acquisition_time=info.get("acq_time"),
+				pathology=info.get("pathology"),
+				other_fields=info
+			)
 
 
 
