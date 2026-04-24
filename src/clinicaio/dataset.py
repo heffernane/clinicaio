@@ -526,14 +526,8 @@ class Image:
 	scan_info: Optional[ImageScanInfo] = None
 
 	###### Loaded lazily and cached ####
-	# from the session's *_scans.tsv
-	# TODO: DATAFRAME?
-	#scan_data_dict: dict[str, Any]
 	# sidecar .json
 	#info: ImageInfo
-	# todo: expose filepath and data itself?
-	#bval: int
-	#bvec: int
 
 	def _get_image_base_full_path(
 		self,
