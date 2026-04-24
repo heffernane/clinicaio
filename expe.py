@@ -1,4 +1,3 @@
-from clinicaio import query
 from clinicaio.dataset import *
 from clinicaio.query import *
 
@@ -11,16 +10,13 @@ from _env import test_bids_read_path
 dataset = BIDSDataset.populate_from_dir(bids_dir=test_bids_read_path, sessions_info=False)
 #print(dataset)
 
-print(dataset._bids_path)
 print(dataset.description)
-for subject in dataset._subjects.values():
+for subject in dataset.all_subjects():
 	print(subject.id)
-	for session in subject.sessions.values():
+	for session in subject.all_sessions():
 		print("\t", session.id)#, session.info)
-		for data_type, images in session._images.items():
-			print(f"\t\t{data_type}")
-			for image in images:
-				print(f"\t\t\t{image}")
+		for image in session.all_images():
+			print(f"\t\t{image.data_type}: {image}")
 
 
 
@@ -32,8 +28,7 @@ image_query = ImageQuery(
 	entities={"trc": "18FFDG", "rec": "coregiso8"},
 	suffix="pet",
 )
-for found_image in image_query.query(dataset):
-	nifti_path = dataset.get_nifti_image_path(found_image)
+for nifti_path in dataset.query_images_nifti_paths(image_query):
 	print(nifti_path)
 	assert(os.path.exists(nifti_path))
 
@@ -59,24 +54,21 @@ def title(text: str):
 title("TSV files")
 subjects_info = [subject.info for subject in dataset.all_subjects()]
 print(subjects_info)
-sessions_info = [session.info for subject, session in dataset.all_sessions()]
+sessions_info = [session.info for session in dataset.all_sessions()]
 print(sessions_info)
-scans_info = [image.scan_info for subject, session, data_type, image in dataset.all_images()]
+scans_info = [image.scan_info for image in dataset.all_images()]
 print(scans_info)
 
 ################### Give me all images with this tracer (ex 18FFDG)
 title("All images with a particular tracer")
-query_results = ImageQuery(entities={"trc": "18FFDG"}).query(dataset)
-#dataset.query_images(ImageQuery(entities={"trc": "18FFDG"}))
+images = dataset.query_images(ImageQuery(entities={"trc": "18FFDG"}))
 # p.ex
-for query_result in query_results:
-	image = query_result.image
-	print(dataset.get_nifti_image_path(query_result), image)
+for image in images:
+	print(image.get_nifti_image_path(), image)
 
 ################### Give me all T1w images paths
 title("All T1w images paths")
-t1w_paths = [dataset.get_nifti_image_path(query_result) for query_result in ImageQuery(suffix="T1w").query(dataset)]
-#dataset.query_paths(ImageQuery(suffix="T1w"))
+t1w_paths = dataset.query_images_nifti_paths(ImageQuery(suffix="T1w"))
 print(t1w_paths)
 
 ################### Give me all modalities for this one subject
@@ -84,10 +76,10 @@ subject_id = SubjectId("sub-ADNI027S0074")
 title(f"All modalities for subject {subject_id}")
 subject = dataset.subject_by_id(subject_id)
 assert(subject is not None)
-modalities = set(image.suffix for _,_,image in subject.all_images())
+modalities = set(image.suffix for image in subject.all_images())
 print(modalities)
 # ou sinon
-modalities = set(res.image.suffix for res in ImageQuery(subjects=[subject_id]).query(dataset))
+modalities = set(image.suffix for image in dataset.query_images(ImageQuery(subjects=[subject_id])))
 print(modalities)
 
 ################### Give me all sessions for this one subject
@@ -100,15 +92,16 @@ title("All subjects/sessions that have both T1 and PET image for the same sessio
 def has_t1_and_pet(session: Session):
 	if session.id.__str__() == "ses-M054":
 		print("SESSION ", session)
-	has_t1 = any(image.suffix == Suffix("T1w") for data_type, image in session.all_images())
+	has_t1 = any(image.suffix == Suffix("T1w") for image in session.all_images())
 	
-	return has_t1 and any(data_type == DataType.PET for data_type, image in session.all_images())
+	return has_t1 and next(iter(session.images_by_data_type(DataType.PET)), None) is None 
 
 subjects_and_sessions_with_t1_and_pet = filter(
-	lambda v: has_t1_and_pet(v[1]),
+	has_t1_and_pet,
 	dataset.all_sessions(),
 )
-for subject, session in subjects_and_sessions_with_t1_and_pet:
+for session in subjects_and_sessions_with_t1_and_pet:
+	subject = session.parent_subject
 	print("\t", subject.id, ":", "\n\t\t", session, "\n")
 
 ################### Give me the subjects that have more than one session
@@ -120,9 +113,9 @@ for subject in subjects_more_than_1_session:
 ################### Check that all subjects/sessions have FLAIR images
 title("All subjects/sessions have FLAIR images?")
 def session_has_flair_image(session: Session):
-	any(image.suffix == Suffix("FLAIR") for data_type, image in session.all_images())
+	any(image.suffix == Suffix("FLAIR") for image in session.all_images())
 
-sessions_all_have_flair = all(session_has_flair_image(session) for _, session in dataset.all_sessions())
+sessions_all_have_flair = all(session_has_flair_image(session) for session in dataset.all_sessions())
 print(sessions_all_have_flair)
 
 
@@ -134,7 +127,7 @@ subjects = dataset.all_subjects()
 all_modalities_per_subject = [(
 	set(
 		image.suffix
-		for session, data_type, image in subject.all_images()
+		for image in subject.all_images()
 	),
 	subject,
 ) for subject in subjects]
@@ -147,11 +140,11 @@ subject=None
 all_modalities_for_subjects = set(
 	image.suffix
 	for subject in dataset.all_subjects()
-	for session, data_type, image in subject.all_images()
+	for image in subject.all_images()
 )
 print(all_modalities_for_subjects)
 
 ################### Can you tell me if all subjects have only one session
 title("all subjects have only one session?")
-all_subjects_have_one_session = all(len(subject.sessions) == 1 for subject in dataset.all_subjects())
+all_subjects_have_one_session = all(subject.sessions_count() == 1 for subject in dataset.all_subjects())
 print(all_subjects_have_one_session)

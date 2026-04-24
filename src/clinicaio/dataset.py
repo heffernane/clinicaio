@@ -20,10 +20,10 @@ class BIDSDataset :
 	_bids_path: Path
 	description: BIDSDatasetDescription
 
-	def __init__(self, bids_path: Path, description: BIDSDatasetDescription, subjects: dict[SubjectId, Subject] = {}):
+	def __init__(self, bids_path: Path, description: BIDSDatasetDescription):
 		self._bids_path = bids_path
 		self.description = description
-		self._subjects = subjects
+		self._subjects = {}
 
 	def subject_by_id(self, id: str | SubjectId) -> Optional[Subject]:
 		return self._subjects.get(id if isinstance(id, SubjectId) else SubjectId(id))
@@ -34,13 +34,16 @@ class BIDSDataset :
 	def subjects_count(self) -> int:
 		return len(self._subjects)
 
-	def all_sessions(self) -> Iterable[tuple[Subject, Session]]:
+	def all_sessions(self) -> Iterable[Session]:
 		for subject in self.all_subjects():
-			yield from ((subject, session) for session in subject.all_sessions())
+			yield from (session for session in subject.all_sessions())
 
-	def all_images(self) -> Iterable[tuple[Subject, Session, DataType, Image]]:
-		for subject, session in self.all_sessions():
-			yield from ((subject, session, data_type, image) for data_type, image in session.all_images())
+	def all_images(self) -> Iterable[Image]:
+		for session in self.all_sessions():
+			yield from session.all_images()
+
+	def _get_full_path(self) -> Path:
+		return self._bids_path
 
 
 	# read sessions.tsv and fill out info in all sessions
@@ -114,8 +117,8 @@ class BIDSDataset :
 			description = BIDSDatasetDescription.load_from_folder(bids_dir)
 		except BIDSException as e:
 			raise BIDSException(f"could not read BIDS description from JSON file: {e}")
-
-		subjects: dict[SubjectId, Subject] = {}
+		
+		dataset = BIDSDataset(bids_path=bids_dir, description=description)
 
 		# Populate subjects/subjects
 		for bids_child in os.scandir(bids_dir):
@@ -139,8 +142,8 @@ class BIDSDataset :
 			except BIDSException as e:
 				raise BIDSException(f"Found invalid subject/subject ID {bids_child.name}: {e}")
 			
-			subject = Subject(sessions={}, id=subject_id)
-			subjects[subject.id] = subject
+			subject = Subject(parent_dataset=dataset, _sessions={}, id=subject_id)
+			dataset._subjects[subject.id] = subject
 
 			# Populate subject's sessions
 			for subject_child in os.scandir(bids_child.path):
@@ -160,8 +163,8 @@ class BIDSDataset :
 				except BIDSException as e:
 					raise BIDSException(f"Found invalid session ID {subject_child.name}: {e}")
 				
-				session = Session(id=session_id, _images={}, info=None)
-				subject.sessions[session.id] = session
+				session = Session(parent_subject=subject, id=session_id, _images={}, info=None)
+				subject._sessions[session.id] = session
 
 				# Populate the session's images, per-datatype
 				for session_child in os.scandir(subject_child.path):
@@ -222,7 +225,14 @@ class BIDSDataset :
 						if not extension.is_nifti():
 							continue
 
-						image = Image(nifti_extension=extension, entities=entities, suffix=suffix)
+						image = Image(
+							parent_session=session, 
+							data_type=data_type,
+
+							nifti_extension=extension, 
+							entities=entities, 
+							suffix=suffix,
+						)
 						session_images.append(image)
 
 
@@ -232,44 +242,20 @@ class BIDSDataset :
 				BIDSDataset._populate_sessions_info(
 					subject_dir=Path(bids_child.path),
 					subject_id=subject.id,
-					sessions=subject.sessions
+					sessions=subject._sessions
 				)
 		
 		if subjects_info:
 			BIDSDataset._populate_subjects_info(
 				bids_dir=bids_dir,
-				subjects=subjects
+				subjects=dataset._subjects
 			)
 
 
 		unhandled_entries = [str(Path(entry).relative_to(bids_dir)) for entry in unhandled_entries]
 		print("UNHANDLED =", unhandled_entries)
-		return BIDSDataset(bids_path=bids_dir, description=description, subjects=subjects)
+		return dataset
 
-	def _get_image_base_path(
-		self,
-		query_result: ImageQueryResult,
-	) -> str:
-		sub_id = query_result.subject.id
-		ses_id = query_result.session.id
-		image = query_result.image
-		entities = "" if len(image.entities) == 0 else f"_{image.entities}"
-		suffix = "" if image.suffix is None else f"_{image.suffix}"
-
-		return str(self._bids_path / f"{sub_id}/{ses_id}/{query_result.data_type}/{sub_id}_{ses_id}{entities}{suffix}")
-	
-	def get_image_companion_file_path(
-		self,
-		query_result: ImageQueryResult,
-		extension: FileExtension,
-	) -> Path:
-		return Path(f"{self._get_image_base_path(query_result)}.{extension}")
-	
-	def get_nifti_image_path(
-		self,
-		query_result: ImageQueryResult,
-	) -> Path:
-		return self.get_image_companion_file_path(query_result, query_result.image.nifti_extension)
 	
 	def write_root_file(self, file_name: str, write_binary: bool) -> Any:
 		if "/" in file_name:
@@ -281,6 +267,19 @@ class BIDSDataset :
 		except FileExistsError:
 			raise BIDSException(f"can't write root dataset file {filename} as it already exists")
 		
+	def add_subject(self, id: SubjectId, info: SubjectInfo) -> Subject:
+		if id in self._subjects:
+			raise BIDSException(f"tried to add subject of ID {id} but it already exists within this dataset")
+
+		subject = Subject(
+			parent_dataset=self,
+			id=id,
+			info=info
+		)
+		self._subjects[id] = subject
+
+		return subject
+
 	# Creates the dataset folder, writes the dataset description JSON, creates the subjects and sessions
 	# folders with their TSV files. Images are not written here. To decide what content to write in each image
 	# file, you must then use Session.write_images().
@@ -294,13 +293,44 @@ class BIDSDataset :
 		
 		self.description._write_to_folder(self._bids_path)
 		for subject in self.all_subjects():
-			subject._write_to_folder(self._bids_path)
+			subject._write_to_folder()
 
 		_write_rows_to_tsv(
 			tsv_path=self._bids_path / "participants.tsv",
 			first_column_name="participant_id",
-			rows=(subject.info.other_fields for subject in self.all_subjects() if subject.info is not None),
+			rows=(subject.info.other_fields | {"participant_id": subject.id} for subject in self.all_subjects() if subject.info is not None),
 		)
+
+	
+	def query_images(self, query: ImageQuery) -> Iterable[Image]:
+		filtered_subjects = self.all_subjects() if len(query.subjects) == 0 else (self.subject_by_id(id) for id in query.subjects)
+		
+		for subject in filtered_subjects:
+			if subject is None:
+				continue
+
+			filtered_sessions = subject.all_sessions() if len(query.sessions) == 0 else (subject.session_by_id(id) for id in query.sessions)
+
+			for session in filtered_sessions:
+				if session is None:
+					continue
+				
+				image_per_data_type = session.all_images() if query.data_type is None else session.images_by_data_type(query.data_type)
+				
+				for image in image_per_data_type:
+					if (query.suffix is not None) and (image.suffix != query.suffix):
+						continue
+
+					if len(query.entities) > 0 and (not image.entities.contains_all(query.entities)):
+						continue
+					
+					yield image
+
+	def query_images_nifti_paths(self, query: ImageQuery) -> Iterable[Path]:
+		return (image.get_nifti_image_path() for image in self.query_images(query))
+	
+	def query_images_companions_paths(self, query: ImageQuery, extension: FileExtension) -> Iterable[Path]:
+		return (image.get_image_companion_file_path(extension) for image in self.query_images(query))
 
 
 # Populated from participants.tsv from root of dataset
@@ -314,27 +344,45 @@ class SubjectInfo:
 # populated from sub-* folders
 @dataclass
 class Subject:
-	sessions: dict[SessionId, Session]
+	parent_dataset: BIDSDataset
+
 	id: SubjectId
 	# https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file
 	# from participants.tsv, matched by participant_id, if available (all Optional[Type] = None, if line missing or n/a value)
 	info: Optional[SubjectInfo] = None
+	_sessions: dict[SessionId, Session] = field(default_factory=lambda: {})
+
+	def _get_full_path(self) -> Path:
+		return self.parent_dataset._get_full_path() / f"{self.id}"
+
+	def add_session(self, id: SessionId, info: SessionInfo) -> Session:
+		if id in self._sessions:
+			raise BIDSException(f"tried to add session of ID {id} but it already exists within this subject")
+		
+		session = Session(
+			parent_subject=self,
+			id=id,
+			info=info
+		)
+		self._sessions[id] = session
+
+		return session
 
 	def all_sessions(self) -> Iterable[Session]:
-		return self.sessions.values()
+		return self._sessions.values()
 
 	def sessions_count(self) -> int:
-		return len(self.sessions)
+		return len(self._sessions)
 
 	def session_by_id(self, id: str | SessionId) -> Optional[Session]:
-		return self.sessions.get(id if isinstance(id, SessionId) else SessionId(id))
+		return self._sessions.get(id if isinstance(id, SessionId) else SessionId(id))
 
-	def all_images(self) -> Iterable[tuple[Session, DataType, Image]]:
+	def all_images(self) -> Iterable[Image]:
 		for session in self.all_sessions():
-			yield from ((session, data_type, image) for data_type, image in session.all_images())
+			yield from session.all_images()
 
-	def _write_to_folder(self, bids_dir: Path):
-		subject_path = bids_dir / str(self.id)
+	def _write_to_folder(self):
+		subject_path = self._get_full_path()
 		try:
 			os.mkdir(subject_path)
 		except FileExistsError:
@@ -343,12 +391,12 @@ class Subject:
 			raise BIDSException(f"BIDS subject folder {subject_path} can't be written as one of its parent folders is missing")
 		
 		for session in self.all_sessions():
-			session._write_to_folder(subject_path, self.id)
+			session._write_to_folder()
 
 		_write_rows_to_tsv(
 			subject_path / f"{self.id}_sessions.tsv",
 			first_column_name="session_id",
-			rows=(session.info.other_fields for session in self.all_sessions() if session.info is not None),
+			rows=(session.info.other_fields | {"session_id": session.id} for session in self.all_sessions() if session.info is not None),
 		 )
 
 
@@ -362,25 +410,7 @@ class SessionInfo:
 	other_fields: dict[str, Any]
 
 @dataclass
-class ImageWriter:
-	image: Image
-	file_path_prefix: str
-
-	def get_path_for_nifti(self) -> Path:
-		"""Returns the path where the NIFTI image file should be placed at. The caller is responsible for actually creating and writing the file."""
-		return Path(f"{self.file_path_prefix}.{self.image.nifti_extension}")
-
-	def get_path_for_companion(self, extension: FileExtension) -> Path:
-		"""
-		Returns the path where this image's companion file (with the given file extension) should be placed at.
-		The caller is responsible for actually creating and writing the file.
-		"""
-		return Path(f"{self.file_path_prefix}.{extension}")
-
-@dataclass
 class ImagesWriter:
-	dataset: BIDSDataset
-	subject: Subject
 	session: Session
 
 	# the key is the path of the image file relative to the session directory
@@ -389,18 +419,31 @@ class ImagesWriter:
 	def write_image(
 		self, 
 		data_type: DataType,
-		image: Image,
-	) -> ImageWriter:
-		query_result = ImageQueryResult(
-			subject=self.subject,
-			session=self.session,
+		nifti_extension: FileExtension,
+		entities: Entities,
+		suffix: Suffix,
+		scan_info: ImageScanInfo,
+	) -> Image:
+		if not nifti_extension.is_nifti():
+			raise BIDSException(f"provided non-NIFTI file extension {nifti_extension} when adding image to session")
+
+		image = Image(
+			parent_session=self.session,
 			data_type=data_type,
-			image=image,
+			nifti_extension=nifti_extension,
+			entities=entities,
+			suffix=suffix,
+			scan_info=scan_info
 		)
 
-		session_path = self.dataset._bids_path / f"{self.subject.id}/{self.session.id}"
+		if data_type not in self.session._images:
+			self.session._images[data_type] = []
+
+		self.session._images[data_type].append(image)
+
+		session_path = self.session._get_full_path()
 		if image.scan_info is not None:
-			image_nifti_path = self.dataset.get_nifti_image_path(query_result)
+			image_nifti_path = image.get_nifti_image_path()
 			image_relative_path = image_nifti_path.relative_to(session_path)
 			self._scan_infos[str(image_relative_path)] = image.scan_info
 
@@ -409,11 +452,10 @@ class ImagesWriter:
 			os.mkdir(data_type_folder_path)
 		except FileExistsError:
 			pass
-		except FileNotFoundError as e:
+		except FileNotFoundError:
 			raise BIDSException(f"one of the parent folders of {data_type_folder_path} does not exist. Make sure to create the subject and session folders first.")
 		
-		prefix = self.dataset._get_image_base_path(query_result)
-		return ImageWriter(image=image, file_path_prefix=prefix)
+		return image
 	
 	def __enter__(self):
 		return self
@@ -421,10 +463,10 @@ class ImagesWriter:
 	def __exit__(self, exc_type, exc, tb):
 		# Do not write the scans.tsv if an error occurred
 		if all(v is None for v in [exc_type, exc, tb]):
-			# TODO: write scans.tsv from all the image info passed to the subsequent write_image() calls
-			sub_id = self.subject.id
+			sub_id = self.session.parent_subject.id
 			ses_id = self.session.id
-			scans_tsv_path = self.dataset._bids_path / f"{sub_id}/{ses_id}/{sub_id}_{ses_id}_scans.tsv"
+			scans_tsv_path = self.session._get_full_path() / f"{sub_id}_{ses_id}_scans.tsv"
+
 			_write_rows_to_tsv(
 				scans_tsv_path,
 				first_column_name="filename",
@@ -433,17 +475,21 @@ class ImagesWriter:
 
 @dataclass
 class Session:
-	# FIXME: maybe Optional/None if sub-M01/anat/sub-M01_T1w.* as allowed for single-session subjects
+	parent_subject: Subject
+
 	id: SessionId
 	_images: dict[DataType, list[Image]] = field(default_factory=lambda: {})
 	info: Optional[SessionInfo] = None
 
+	def _get_full_path(self) -> Path:
+		return self.parent_subject._get_full_path() / f"{self.id}"
+
 	def images_by_data_type(self, data_type: str | DataType) -> Iterable[Image]:
 		return self._images.get(DataType(data_type)) or []
 
-	def all_images(self) -> Iterable[tuple[DataType, Image]]:
-		for data_type, images in self._images.items():
-			yield from ((data_type, image) for image in images)
+	def all_images(self) -> Iterable[Image]:
+		for images in self._images.values():
+			yield from (image for image in images)
 
 	def images_count(self, data_type: Optional[DataType] = None) -> int:
 		if data_type is None:
@@ -451,12 +497,18 @@ class Session:
 		else:
 			images_for_data_type = self._images.get(data_type)
 			return 0 if images_for_data_type is None else len(images_for_data_type)
-		
-	def _write_to_folder(self, subject_folder: Path, subject_id: SubjectId):
-		pass
-		
-	def write_images(self, dataset: BIDSDataset, subject: Subject) -> ImagesWriter:
-		return ImagesWriter(dataset=dataset, subject=subject, session=self)
+
+	def _write_to_folder(self):
+		session_path = self._get_full_path()
+		try:
+			os.mkdir(session_path)
+		except FileExistsError:
+			raise BIDSException(f"BIDS session folder {session_path} can't be written as it already exists")
+		except FileNotFoundError:
+			raise BIDSException(f"BIDS session folder {session_path} can't be written as one of its parent folders is missing")
+
+	def write_images(self) -> ImagesWriter:
+		return ImagesWriter(session=self)
 
 # sidecar file .json
 class ImageInfo:
@@ -464,15 +516,16 @@ class ImageInfo:
 	#sidecar_dict: dict[str, Any]
 	pass
 
+@dataclass
 class ImageScanInfo:
 	# TODO: proper typing for fields defined in BIDS specification
 	other_fields: dict[str, Any]
 
-
-
-
 @dataclass
 class Image:
+	parent_session: Session
+	data_type: DataType
+
 	nifti_extension: FileExtension
 	entities: Entities
 	suffix: Optional[Suffix] = None
@@ -487,3 +540,19 @@ class Image:
 	# todo: expose filepath and data itself?
 	#bval: int
 	#bvec: int
+
+	def _get_image_base_full_path(
+		self,
+	) -> Path:
+		ses_id = self.parent_session.id
+		sub_id = self.parent_session.parent_subject.id
+		entities = "" if len(self.entities) == 0 else f"_{self.entities}"
+		suffix = "" if self.suffix is None else f"_{self.suffix}"
+
+		return self.parent_session._get_full_path() / f"{self.data_type}/{sub_id}_{ses_id}{entities}{suffix}"
+	
+	def get_image_companion_file_path(self, extension: FileExtension) -> Path:
+		return self._get_image_base_full_path().with_suffix(f".{extension}")
+	
+	def get_nifti_image_path(self) -> Path:
+		return self.get_image_companion_file_path(self.nifti_extension)

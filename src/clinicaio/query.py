@@ -4,7 +4,7 @@ from .entities import *
 from .types import *
 from .dataset import *
 
-from typing import Optional, Iterable
+from typing import Optional
 
 @dataclass
 class ImageQuery:
@@ -52,39 +52,3 @@ class ImageQuery:
 			raise BIDSException(f"invalid type {type(entities)} for ImageQuery entities {entities}")
 		
 		self.suffix = None if suffix is None else type_or_type_from_val(suffix, Suffix)
-		
-    
-	def query(
-		self,
-		dataset: BIDSDataset
-	) -> Iterable[ImageQueryResult]:
-		filtered_subjects = dataset.all_subjects() if len(self.subjects) == 0 else (dataset.subject_by_id(id) for id in self.subjects)
-		
-		for subject in filtered_subjects:
-			if subject is None:
-				continue
-
-			filtered_sessions = subject.all_sessions() if len(self.sessions) == 0 else (subject.session_by_id(id) for id in self.sessions)
-
-			for session in filtered_sessions:
-				if session is None:
-					continue
-				
-				image_per_data_type = session.all_images() if self.data_type is None else ((self.data_type, image) for image in session.images_by_data_type(self.data_type))
-				
-				for data_type, image in image_per_data_type:
-					if (self.suffix is not None) and (image.suffix != self.suffix):
-						continue
-
-					if len(self.entities) > 0 and (not image.entities.contains_all(self.entities)):
-						continue
-					
-					yield ImageQueryResult(subject=subject, session=session, data_type=data_type, image=image)
-
-@dataclass
-class ImageQueryResult:
-	subject: Subject
-	session: Session
-	data_type: DataType
-	image: Image
-
