@@ -2,14 +2,10 @@ from __future__ import annotations
 
 from fileinput import filename
 from typing import Optional, Iterable, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import os
-
-from pydantic import Field, PrivateAttr
-
-from clinicaio.model import Model
 
 from .types import *
 from .entities import *
@@ -58,7 +54,8 @@ class BIDSDataset :
 			raise BIDSException(f"{participants_tsv_path} did not have required participant_id column")
 		
 		for df_row in subject_tsv_df.itertuples(index=False):
-			subject_id = df_row.participant_id
+			info: dict[str, Any] = df_row._asdict()
+			subject_id = info.pop("participant_id", None)
 			if subject_id == None:
 				continue
 			try:
@@ -71,13 +68,12 @@ class BIDSDataset :
 				continue
 				#raise BIDSException(f"could not find subject of ID {subject_id} referenced by TSV file {participants_tsv_path}")
 
-			info: dict[str, Any] = df_row._asdict()
 			subject.info = SubjectInfo(
 				other_fields=info
 			)
 
 	@classmethod
-	def populate_from_dir(cls, bids_dir: Path, sessions_info: bool, subjects_info: bool) -> BIDSDataset:
+	def populate_from_dir(cls, bids_dir: Path, sessions_info: bool, subjects_info: bool, image_scans_info: bool) -> BIDSDataset:
 		unhandled_entries: list[str] = []
 
 		try:
@@ -133,6 +129,9 @@ class BIDSDataset :
 
 				# Populate the session's images, per-datatype
 				for session_child in os.scandir(subject_child.path):
+					if session_child.name == f"{subject.id}_{session.id}_scans.tsv":
+						continue
+
 					try:
 						data_type = DataType(session_child.name)
 					except:
@@ -143,48 +142,24 @@ class BIDSDataset :
 						raise BIDSException(f"Found data type entry {bids_child.name}/{subject_child.name}/{session_child.name} that was not a directory")
 
 					for data_type_child in os.scandir(session_child.path):
-						try:
-							[before_ext, file_ext] = data_type_child.name.split(".", maxsplit=1)
-						except ValueError:
-							# no "." in string so can't decompose list in assignment
-							unhandled_entries.append(data_type_child.path)
-							continue
-
-						try:
-							extension = FileExtension(file_ext)
-						except ValueError:
-							# If this happens for legitimate files, you may need to add the file extension to the enumeration
-							raise BIDSException(f"Found unknown file extension {file_ext} for file {data_type_child.path}")
-
 						sub_ses_prefix = f"{subject.id}_{session.id}_"
-						if not before_ext.startswith(sub_ses_prefix):
+						if not data_type_child.name.startswith(sub_ses_prefix):
 							raise BIDSException(f"expected {bids_child.name}/{subject_child.name}/{session_child.name}/{data_type_child.name} \
 								filename to start with {sub_ses_prefix} due to its placement in the BIDS directory hierarchy")
 						
-						entities_and_suffix = before_ext.removeprefix(sub_ses_prefix)
-						if len(entities_and_suffix) == 0:
-							raise BIDSException(f"found image file {data_type_child.path} without any entity or suffix")
-						
-						entities = entities_and_suffix.split("_")
-						suffix = None
-						if "-" not in entities[-1]:
-							try:
-								suffix = Suffix(entities[-1])
-							except BIDSException as e:
-								raise BIDSException(f"found invalid suffix label for image file {data_type_child.path}: {e}")
-							
-							entities = entities[:-1]
-						
-						try:
-							entities = Entities.from_str_list(entities)
-						except BIDSException as e:
-							raise BIDSException(f"found invalid entities for image file {data_type_child.path}: {e}")
+						after_sub_ses = data_type_child.name.removeprefix(sub_ses_prefix)
+
+						filename_components = Image._parse_filename_components(after_sub_ses, data_type_child.path)
+						if filename_components is None:
+							unhandled_entries.append(data_type_child.path)
+							continue
+						entities, suffix, extension = filename_components
 
 						# All the usual filename validation is done for non-NIFTI files, so that
 						# we do not end up in a situation where the companion files (.json, etc.)
 						# are inaccessible due to invalid naming. We do not store those companion
 						# files however: we just validate the paths, but only actually accessing
-						# such companion files by their paths will tell if a particular one exists.
+						# such companion files by their paths will tell whether a particular one exists.
 						if not extension.is_nifti():
 							continue
 
@@ -196,6 +171,8 @@ class BIDSDataset :
 							suffix=suffix,
 							scan_info=None,
 						)
+				if image_scans_info:
+					session._populate_image_scans_info_from_tsv()
 			
 			if sessions_info:
 				subject._populate_sessions_info_from_tsv()
@@ -251,7 +228,7 @@ class BIDSDataset :
 			first_column_name="participant_id",
 			rows=(subject.info.other_fields | {"participant_id": subject.id} for subject in self.all_subjects() if subject.info is not None),
 		)
-
+ 
 	
 	def query_images(self, query: ImageQuery) -> Iterable[Image]:
 		filtered_subjects = self.all_subjects() if len(query.subjects) == 0 else (self.subject_by_id(id) for id in query.subjects)
@@ -293,14 +270,15 @@ class SubjectInfo:
 
 # aka Subject
 # populated from sub-* folders
-class Subject(Model):
-	parent_dataset: BIDSDataset = Field(repr=False)
+@dataclass
+class Subject:
+	parent_dataset: BIDSDataset = field(repr=False, compare=False)
 
 	id: SubjectId
 	# https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file
 	# from participants.tsv, matched by participant_id, if available (all Optional[Type] = None, if line missing or n/a value)
 	info: Optional[SubjectInfo] = None
-	_sessions: dict[SessionId, Session] = PrivateAttr(default_factory=lambda: {})
+	_sessions: dict[SessionId, Session] = field(default_factory=lambda: {})
 
 	def _get_full_path(self) -> Path:
 		return self.parent_dataset._get_full_path() / f"{self.id}"
@@ -346,8 +324,12 @@ class Subject(Model):
 		_write_rows_to_tsv(
 			subject_path / f"{self.id}_sessions.tsv",
 			first_column_name="session_id",
-			rows=(session.info.other_fields | {"session_id": session.id} for session in self.all_sessions() if session.info is not None),
-		 )
+			rows=(
+				session.info.all_fields() | {"session_id": session.id} 
+				for session in self.all_sessions()
+				if session.info is not None
+			),
+		)
 
 	# read the subject's sessions.tsv and fill out info in all sessions
 	def _populate_sessions_info_from_tsv(self):
@@ -360,7 +342,8 @@ class Subject(Model):
 			raise BIDSException(f"found sessions.tsv file {sessions_tsv_path} without required session_id column")
 
 		for df_row in sessions_tsv_df.itertuples(index=False):
-			session_id = df_row.session_id
+			info: dict[str, Any] = df_row._asdict()
+			session_id = info.pop("session_id", None)
 			if session_id == None:
 				continue
 			try:
@@ -373,10 +356,9 @@ class Subject(Model):
 				continue
 				#raise BIDSException(f"could not find session of ID {session_id} referenced by TSV file {sessions_tsv_path}")
 
-			info: dict[str, Any] = df_row._asdict()
 			session.info = SessionInfo(
-				acquisition_time=info.get("acq_time"),
-				pathology=info.get("pathology"),
+				acquisition_time=info.pop("acq_time", None),
+				pathology=info.pop("pathology", None),
 				other_fields=info
 			)
 
@@ -389,6 +371,12 @@ class SessionInfo:
 	acquisition_time: Optional[str]
 	pathology: Optional[str]
 	other_fields: dict[str, Any]
+
+	def all_fields(self) -> dict[str, Any]:
+		return self.other_fields | {
+			"acq_time": self.acquisition_time,
+			"pathology": self.pathology,
+		}
 
 @dataclass
 class ImagesWriter:
@@ -442,11 +430,12 @@ class ImagesWriter:
 				rows=rows,
 			)
 
-class Session(Model):
-	parent_subject: Subject = Field(repr=False)
+@dataclass
+class Session:
+	parent_subject: Subject = field(repr=False, compare=False)
 
 	id: SessionId
-	_images: dict[DataType, list[Image]] = PrivateAttr(default_factory=lambda: {})
+	_images: dict[DataType, list[Image]] = field(default_factory=lambda: {})
 	info: Optional[SessionInfo] = None
 
 	def _get_full_path(self) -> Path:
@@ -504,6 +493,61 @@ class Session(Model):
 
 	def write_images(self) -> ImagesWriter:
 		return ImagesWriter(session=self)
+	
+	# read the session's _scans.tsv and fill out scan info for all images
+	def _populate_image_scans_info_from_tsv(self):
+		sub_ses_prefix = f"{self.parent_subject.id}_{self.id}_"
+		scans_tsv_path = self._get_full_path() / f"{sub_ses_prefix}scans.tsv"
+		if not os.path.exists(scans_tsv_path):
+			return
+		
+		scans_tsv_df = _read_tsv_as_df(scans_tsv_path)
+		if "filename" not in scans_tsv_df.columns:
+			raise BIDSException(f"found _scans.tsv file {scans_tsv_path} without required filename column")
+
+		for df_row in scans_tsv_df.itertuples(index=False):
+			info: dict[str, Any] = df_row._asdict()
+			image_filename = info.pop("filename", None)
+			if image_filename == None:
+				continue
+			try:
+				data_type, image_basename = str(image_filename).split(sep="/", maxsplit=1)
+			except ValueError:
+				raise BIDSException(f"expected image/scan filename of format <data_type>/<...> for {image_filename} in _scans.tsv file {scans_tsv_path}")
+			
+			try:
+				data_type = DataType(data_type)
+			except ValueError:
+				raise BIDSException(f"expected valid data type as first folder of filename {image_filename} in _scans.tsv file {scans_tsv_path}")
+			
+			if not image_basename.startswith(sub_ses_prefix):
+				raise BIDSException(f"expected image basename {image_basename} of filename {image_filename} in _scans.tsv file {scans_tsv_path} to have prefix {sub_ses_prefix}")
+
+			after_sub_ses = image_basename.removeprefix(sub_ses_prefix)
+			try:
+				filename_components = Image._parse_filename_components(after_sub_ses, str(image_filename))
+			except BIDSException as e:
+				raise BIDSException(f"found invalid image filename {image_filename} in _scans.tsv file {scans_tsv_path}: {e}")
+
+			if filename_components is None:
+				raise BIDSException(f"found image filename {image_filename} in _scans.tsv file {scans_tsv_path} without any file extension")
+			entities, suffix, extension = filename_components
+
+			if not extension.is_nifti():
+				continue
+
+			image = None
+			for img_by_data_type in self.images_by_data_type(data_type):
+				if img_by_data_type.nifti_extension == extension and img_by_data_type.entities == entities and img_by_data_type.suffix == suffix:
+					image = img_by_data_type
+					break
+
+			if image is None:
+				raise BIDSException(f"could not find image for filename {image_filename} in _scans.tsv file {scans_tsv_path}")
+			
+			image.scan_info = ImageScanInfo(
+				other_fields=info
+			)
 
 # sidecar file .json
 class ImageInfo:
@@ -516,8 +560,9 @@ class ImageScanInfo:
 	# TODO: proper typing for fields defined in BIDS specification
 	other_fields: dict[str, Any]
 
-class Image(Model):
-	parent_session: Session = Field(repr=False)
+@dataclass
+class Image:
+	parent_session: Session = field(repr=False, compare=False)
 	data_type: DataType
 
 	nifti_extension: FileExtension
@@ -528,6 +573,48 @@ class Image(Model):
 	###### Loaded lazily and cached ####
 	# sidecar .json
 	#info: ImageInfo
+
+	@staticmethod
+	def _parse_filename_components(filename_after_sub_ses: str, full_path: str) -> Optional[tuple[Entities, Optional[Suffix], FileExtension]]:
+		"""
+		A given BIDS image filename is of the form sub-<label_ses-<label>_<rest>,
+		where <rest> is <entities>[_<suffix>].<extension>.
+		This function's role is to parse the <rest> part into its components.
+		It returns None if there is no file extension, or a BIDSException if
+		the passed string is invalid.
+		"""
+		try:
+			[before_ext, file_ext] = filename_after_sub_ses.split(".", maxsplit=1)
+		except ValueError:
+			# no "." in string so can't decompose list in assignment
+			return None
+
+		entities_and_suffix = before_ext
+		if len(entities_and_suffix) == 0:
+			raise BIDSException(f"found image filename {filename_after_sub_ses} of path {full_path} without any entity or suffix")
+
+		try:
+			extension = FileExtension(file_ext)
+		except ValueError:
+			# If this happens for legitimate files, you may need to add the file extension to the enumeration
+			raise BIDSException(f"Found unknown file extension {file_ext} for filename {filename_after_sub_ses} of path {full_path}")
+		
+		entities = entities_and_suffix.split("_")
+		suffix = None
+		if "-" not in entities[-1]:
+			try:
+				suffix = Suffix(entities[-1])
+			except BIDSException as e:
+				raise BIDSException(f"found invalid suffix label for image filename {filename_after_sub_ses} of path {full_path}: {e}")
+			
+			entities = entities[:-1]
+		
+		try:
+			entities = Entities.from_str_list(entities)
+		except BIDSException as e:
+			raise BIDSException(f"found invalid entities for image filename {filename_after_sub_ses} of path {full_path}: {e}")
+		
+		return (entities, suffix, extension)
 
 	def _get_image_base_full_path(
 		self,

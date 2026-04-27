@@ -16,7 +16,7 @@ class Label:
 	def __str__(self):
 		return self.value
 
-# subject id = sub-<label> (for folder names, entities, participants.tsv, etc.s)
+# subject id = sub-<label> (for folder names, entities, participants.tsv, etc.)
 @dataclass
 class SubjectId:
 	_id: Label
@@ -37,7 +37,7 @@ class SubjectId:
 	def __hash__(self):
 		return self._id.value.__hash__()
 
-# session id = ses-<label> (for folder names, entities, sessions.tsv, etc.s)
+# session id = ses-<label> (for folder names, entities, sessions.tsv, etc.)
 @dataclass
 class SessionId:
 	_id: Label

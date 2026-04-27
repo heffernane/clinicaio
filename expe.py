@@ -7,7 +7,7 @@ from clinicaio.query import *
 # test_bids_read_path=Path("/path/to/BIDS")
 from _env import test_bids_read_path
 
-dataset = BIDSDataset.populate_from_dir(bids_dir=test_bids_read_path, sessions_info=True, subjects_info=True)
+dataset = BIDSDataset.populate_from_dir(bids_dir=test_bids_read_path, sessions_info=True, subjects_info=True, image_scans_info=True)
 #print(dataset)
 
 print(dataset.description)
@@ -73,7 +73,8 @@ for path in t1w_paths:
 	print(path)
 
 ################### Give me all modalities for this one subject
-subject_id = SubjectId("sub-ADNI027S0074")
+#subject_id = SubjectId("sub-ADNI027S0074")
+subject_id = SubjectId("sub-AIBL1455")
 title(f"All modalities for subject {subject_id}")
 subject = dataset.subject_by_id(subject_id)
 assert(subject is not None)
@@ -149,3 +150,37 @@ print(all_modalities_for_subjects)
 title("all subjects have only one session?")
 all_subjects_have_one_session = all(subject.sessions_count() == 1 for subject in dataset.all_subjects())
 print(all_subjects_have_one_session)
+
+
+
+import shutil
+import os
+print("WRITING COPY OF DATASET")
+dataset._bids_path = Path("/tmp/bids_foobar_write")
+shutil.rmtree(dataset._bids_path, ignore_errors=True)
+dataset.write_dataset()
+for session in dataset.all_sessions():
+	images = list(session.all_images())
+
+	session._images = {}
+	with session.write_images() as images_writer:
+		for image in images:
+			added_image = images_writer.write_image(
+				data_type=image.data_type,
+				nifti_extension=image.nifti_extension,
+				entities=image.entities,
+				suffix=image.suffix,
+				scan_info=image.scan_info
+			)
+			nifti_path = added_image.get_nifti_image_path()
+			try:
+				os.mkdir(nifti_path.parent)
+			except FileExistsError:
+				pass
+			open(nifti_path, mode="x")
+
+
+dataset2 = BIDSDataset.populate_from_dir(dataset._bids_path, sessions_info=True, subjects_info=True, image_scans_info=True)
+#print(dataset2.__repr__(), file=open("aaaa", mode="w"))
+#print(dataset.__repr__(), file=open("bbbb", mode="w"))
+assert(dataset2 == dataset)

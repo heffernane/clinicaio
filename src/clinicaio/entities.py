@@ -4,7 +4,7 @@ from typing import OrderedDict
 from collections.abc import Iterator
 from dataclasses import dataclass
 
-from .types import Label
+from .types import BIDSException, Label
 
 # not for sub- and ses- entities
 # todo: enum?
@@ -32,9 +32,14 @@ class Entities:
 
 	@classmethod
 	def from_str_list(cls, entities: list[str]) -> Entities:
-		return Entities(OrderedDict(
-			(EntityKey(key), EntityValue(value)) for [key, value] in (entity.split("-", maxsplit=1) for entity in entities)
-		))
+		try:
+			values = OrderedDict(
+				(EntityKey(key), EntityValue(value)) for [key, value] in (entity.split("-", maxsplit=1) for entity in entities)
+			)
+		except ValueError:
+			raise BIDSException(f"found entities list {entities} that had an element without a - separator")
+
+		return Entities(values)
 
 	@classmethod
 	def from_str(cls, entities: str) -> Entities:

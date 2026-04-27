@@ -78,3 +78,16 @@ with session1.write_images() as images_writer:
         "name": "test",
         "size": 3092,
     }, fp=f)
+
+
+
+read_infos = False
+dataset2 = BIDSDataset.populate_from_dir(test_bids_write_path, sessions_info=read_infos, subjects_info=read_infos, image_scans_info=read_infos)
+print(dataset2)
+print(dataset2.description)
+for subject in dataset2.all_subjects():
+	print(subject.id, subject.info)
+	for session in subject.all_sessions():
+		print("\t", session.id, session.info)
+		for image in session.all_images():
+			print(f"\t\t{image.data_type}: {image}")
