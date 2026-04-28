@@ -16,8 +16,8 @@ def test_ids_prefix_with_empty_label():
         SessionId("ses-")
 
 def test_ids_to_str():
-    assert(SubjectId("sub-123").__str__() == "sub-123")
-    assert(SessionId("ses-123").__str__() == "ses-123")
+    assert(str(SubjectId("sub-123")) == "sub-123")
+    assert(str(SessionId("ses-123")) == "ses-123")
 
 def test_ids_non_alnum_chars():
     with pytest.raises(BIDSException, match=escape("BIDS subject id sub-é had invalid label (in sub-<label>): BIDS label é must be all [a-zA-Z0-9] characters")):
@@ -62,11 +62,11 @@ def test_enum_to_str():
     # We test this notably because while StrEnum has the correct behavior
     # when we inherit from it, class Foo(str, Enum) does not (in some
     # Python versions)
-    assert(BIDSDatasetType.RAW.__str__() == "raw")
-    assert(DataType.PHENOTYPE.__str__() == "phenotype")
-    assert(FileExtension.NII_GZ.__str__() == "nii.gz")
+    assert(str(BIDSDatasetType.RAW) == "raw")
+    assert(str(DataType.PHENOTYPE) == "phenotype")
+    assert(str(FileExtension.NII_GZ) == "nii.gz")
 
 def test_wrappers_to_str():
-    assert(Suffix("sfx").__str__() == "sfx")
-    assert(BIDSVersion("1.10.0").__str__() == "1.10.0")
-    assert(Label("txt").__str__() == "txt")
+    assert(str(Suffix("sfx")) == "sfx")
+    assert(str(BIDSVersion("1.10.0")) == "1.10.0")
+    assert(str(Label("txt")) == "txt")

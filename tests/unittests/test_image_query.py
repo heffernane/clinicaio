@@ -207,7 +207,7 @@ def test_entities_mixed_dict():
     assert(query.entities.contains_all(entities))
     assert(query.entities == entities)
 
-    assert(entities.__str__() == s)
+    assert(str(entities) == s)
 
 def test_entities_invalid_type():
     with pytest.raises(BIDSException, match=escape("invalid type <class 'int'> for ImageQuery entities 3")):
@@ -222,11 +222,11 @@ def test_suffix_class():
     suffix = Suffix(s)
     query = ImageQuery(suffix=suffix)
     assert(query.suffix == suffix)
-    assert(query.suffix.__str__() == s)
+    assert(str(query.suffix) == s)
 
 def test_suffix_str():
     s = "sfx"
     query = ImageQuery(suffix=s)
     suffix = Suffix(s)
     assert(query.suffix == suffix)
-    assert(query.suffix.__str__() == s)
+    assert(str(query.suffix) == s)

@@ -92,7 +92,7 @@ print(sessions_for_subject)
 ################### Give me all subjects/sessions that have both a T1 and a PET image for the same session
 title("All subjects/sessions that have both T1 and PET image for the same session")
 def has_t1_and_pet(session: Session):
-	if session.id.__str__() == "ses-M054":
+	if str(session.id) == "ses-M054":
 		print("SESSION ", session)
 	has_t1 = any(image.suffix == Suffix("T1w") for image in session.all_images())
 	
