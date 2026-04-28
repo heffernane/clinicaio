@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import OrderedDict
 from collections.abc import Iterator
 from dataclasses import dataclass
 
@@ -25,17 +24,18 @@ class EntityValue:
 
 @dataclass
 class Entities:
-	_entities: OrderedDict[EntityKey, EntityValue]
+	_entities: dict[EntityKey, EntityValue]
 
-	def __init__(self, entities: OrderedDict[EntityKey, EntityValue]):
+	def __init__(self, entities: dict[EntityKey, EntityValue]):
 		self._entities = entities
 
 	@classmethod
 	def from_str_list(cls, entities: list[str]) -> Entities:
 		try:
-			values = OrderedDict(
-				(EntityKey(key), EntityValue(value)) for [key, value] in (entity.split("-", maxsplit=1) for entity in entities)
-			)
+			values = {
+				EntityKey(key): EntityValue(value)
+				for [key, value] in (entity.split("-", maxsplit=1) for entity in entities)
+			}	
 		except ValueError:
 			raise BIDSException(f"found entities list {entities} that had an element without a - separator")
 
