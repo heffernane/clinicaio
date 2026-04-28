@@ -31,7 +31,7 @@ class BIDSDatasetDescription:
 		json.dump(json_out, json_file)
 
 	@classmethod
-	def load_from_folder(cls, desc_json_folder: Path) -> BIDSDatasetDescription:
+	def _load_from_folder(cls, desc_json_folder: Path) -> BIDSDatasetDescription:
 		try:
 			desc_file = open(desc_json_folder / BIDSDatasetDescription._JSON_FILENAME, mode="r")
 		except OSError as e:

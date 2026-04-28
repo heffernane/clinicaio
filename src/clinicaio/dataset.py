@@ -77,7 +77,7 @@ class BIDSDataset :
 		unhandled_entries: list[str] = []
 
 		try:
-			description = BIDSDatasetDescription.load_from_folder(bids_dir)
+			description = BIDSDatasetDescription._load_from_folder(bids_dir)
 		except BIDSException as e:
 			raise BIDSException(f"could not read BIDS description from JSON file: {e}")
 		
@@ -445,10 +445,21 @@ class Session:
 		return self._images.get(DataType(data_type)) or []
 
 	def all_images(self) -> Iterable[Image]:
+		"""Returns all the images that are part of this session"""
 		for images in self._images.values():
 			yield from (image for image in images)
 
 	def images_count(self, data_type: Optional[DataType] = None) -> int:
+		"""
+		Parameters
+		----------
+		data_type : Optional[DataType], default=None
+			The data type that the considered images should have to be counted, or None to count all images
+
+		Returns
+		-------
+		The images count of this session, eventually only considering images that have a given data type.
+		"""
 		if data_type is None:
 			return sum(len(images) for images in self._images.values())
 		else:

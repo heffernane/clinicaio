@@ -31,6 +31,24 @@ class Entities:
 
 	@classmethod
 	def from_str_list(cls, entities: list[str]) -> Entities:
+		"""
+		Creates entities from its list form.
+		
+		Parameters
+		----------
+		entities : list[str]
+			List of the form ["<key1>-<value1>", ....., "<keyN>-<valueN>"]
+		
+		Raises
+		------
+		BIDSException:
+			if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
+
+		Returns
+		-------
+		The created entities
+		"""
+
 		try:
 			values = {
 				EntityKey(key): EntityValue(value)
@@ -43,16 +61,39 @@ class Entities:
 
 	@classmethod
 	def from_str(cls, entities: str) -> Entities:
+		"""
+		Creates entities from its string form.
+		
+		Parameters
+		----------
+		entities : str
+			String of the form ``"<key1>-<value1>_..._<keyN>-<valueN>"``
+		
+		Raises
+		------
+		BIDSException:
+			if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
+
+		Returns
+		-------
+		The created entities
+		"""
 		return Entities.from_str_list(entities.split("_"))
 
 	def __str__(self):
+		"""Returns the string form of the entity, i.e. ``"<key1>-<value1>_..._<keyN>-<valueN>"`` """
 		return "_".join(f"{key}-{value}" for key, value in self)
 	
 	def contains_entity(self, key: EntityKey, value: EntityValue) -> bool:
+		"""Returns whether the entities contain the given entity given by key/value pair"""
 		actual_value = self._entities.get(key)
 		return (actual_value is not None) and (actual_value == value)
 	
 	def contains_all(self, queried_entities: Entities) -> bool:
+		"""
+		Returns whether the queried entities are all contained in the entities.
+		There may be more entities available than there are queried ones.
+		"""
 		for queried_key, queried_value in queried_entities:
 			if not self.contains_entity(queried_key, queried_value):
 				return False

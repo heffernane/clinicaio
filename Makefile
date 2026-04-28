@@ -18,7 +18,7 @@ clean.doc:
 
 .PHONY: doc
 doc: clean.doc install.doc
-	sphinx-build -b html docs docs/_build
+	@$(POETRY) run sphinx-build --nitpicky -b html docs docs/_build
 
 .PHONY: install.doc
 install.doc: check.lock

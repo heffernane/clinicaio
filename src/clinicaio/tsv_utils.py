@@ -12,6 +12,11 @@ __all__ = [
 ]
 
 def _read_tsv_as_df(tsv_path: Path) -> pd.DataFrame:
+	"""
+	Reads the given TSV file as a pandas DataFrame, with all columns
+	being objects and NaN (n/a, etc.) being replaced with None.
+	"""
+
 	try:
 		df = pd.read_csv(tsv_path, sep='\t', dtype=object)
 		#df = df.replace("n/a", None, inplace=True)
@@ -22,6 +27,15 @@ def _read_tsv_as_df(tsv_path: Path) -> pd.DataFrame:
 		raise BIDSException(f"Could not read TSV file {tsv_path}: {e}")
 	
 def _write_rows_to_tsv(tsv_path: Path, first_column_name: str, rows: Iterable[dict[str, Any]]):
+	"""
+	Writes the given row to the given TSV file, making sure to move the ``first_column_name`` as first column.
+
+	Raises
+	------
+	BIDSException:
+		if the ``first_column_name`` is not provided for one of the rows, or if the TSV file already exists.
+	"""
+
 	# The ID column in BIDS TSV files is usually required to be the first one. In practice it's
 	# not always the case when we read them, but let's enforce it when writing them.
 	def dict_with_first_column(values: dict[str, Any]) -> OrderedDict[str, Any]:
