@@ -7,11 +7,11 @@ from pathlib import Path
 
 import os
 
-from .types import *
-from .entities import *
-from .dataset_description import *
-from .query import *
-from .tsv_utils import *
+from .types import SubjectId, SessionId, Suffix, BIDSException, DataType, FileExtension
+from .entities import Entities
+from .dataset_description import BIDSDatasetDescription
+from .image_query import *
+from .tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
 
 @dataclass
 class BIDSDataset :

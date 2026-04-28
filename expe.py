@@ -1,5 +1,5 @@
 from clinicaio.dataset import *
-from clinicaio.query import *
+from clinicaio.image_query import *
 
 # IN _env.py:
 #

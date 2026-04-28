@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from .types import *
-
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import json
+
+from .types import BIDSException, BIDSVersion, BIDSDatasetType
 
 # dataset_description.json at the root of the BIDS dataset
 @dataclass
