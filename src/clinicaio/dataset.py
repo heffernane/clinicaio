@@ -11,7 +11,7 @@ from .types import SubjectId, SessionId, Suffix, BIDSException, DataType, FileEx
 from .entities import Entities
 from .dataset_description import BIDSDatasetDescription
 from .image_query import *
-from .tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
+from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
 
 @dataclass
 class BIDSDataset :
@@ -588,10 +588,10 @@ class Image:
 	@staticmethod
 	def _parse_filename_components(filename_after_sub_ses: str, full_path: str) -> Optional[tuple[Entities, Optional[Suffix], FileExtension]]:
 		"""
-		A given BIDS image filename is of the form sub-<label_ses-<label>_<rest>,
-		where <rest> is <entities>[_<suffix>].<extension>.
-		This function's role is to parse the <rest> part into its components.
-		It returns None if there is no file extension, or a BIDSException if
+		A given BIDS image filename is of the form ``sub-<label_ses-<label>_<rest>``,
+		where ``<rest>`` is ``<entities>[_<suffix>].<extension>``.
+		This function's role is to parse the ``<rest>`` part into its components.
+		It returns ``None`` if there is no file extension, or a :py:class:`~clinicaio.types.BIDSException` if
 		the passed string is invalid.
 		"""
 		try:

@@ -28,7 +28,7 @@ class SubjectId:
 	Parameters
 	----------
 	id : str
-		a string of the form "sub-<label>" where label is an ASCII alphanumeric string
+		a string of the form ``"sub-<label>"`` where label is an ASCII alphanumeric string
 
 	Raises
 	------
@@ -67,7 +67,7 @@ class SessionId:
 	Parameters
 	----------
 	id : str
-		a string of the form "ses-<label>" where label is an ASCII alphanumeric string
+		a string of the form ``"ses-<label>"`` where label is an ASCII alphanumeric string
 
 	Raises
 	------

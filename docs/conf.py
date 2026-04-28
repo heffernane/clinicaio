@@ -27,6 +27,16 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 autoapi_dirs = ["../src"]
 autoapi_root = "reference/api"
+autoapi_options = [ 
+    'members',
+    'undoc-members',
+    # Do not document private functions marked with single underscore _ prefix
+    #'private-members',
+    'show-inheritance', 
+    'show-module-summary', 
+    'special-members',
+    'imported-members',
+]
 
 
 # -- Options for HTML output -------------------------------------------------
