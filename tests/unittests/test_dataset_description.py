@@ -1,8 +1,10 @@
-from clinicaio.dataset import *
-#from dataset import *
-import pytest
 from re import escape
 from io import StringIO
+
+import pytest
+
+from clinicaio.dataset_description import *
+from clinicaio.types import BIDSDatasetType
 
 new_desc = lambda json_str: BIDSDatasetDescription._load_from_data(StringIO(json_str))
 def test_desc_invalid_json():
@@ -20,3 +22,7 @@ def test_desc_missing_fields():
         new_desc('{"BIDSVersion": "1.10.0","DatasetType": "raw"}')
     with pytest.raises(BIDSException, match="missing mandatory field in BIDS JSON description file: 'BIDSVersion'"):
         new_desc('{"Name": "TEST","DatasetType": "raw"}')
+
+def test_default_dataset_type():
+    desc = new_desc('{"Name": "TEST", "BIDSVersion": "1.10.0"}')
+    assert(desc.dataset_type == BIDSDatasetType.RAW)
