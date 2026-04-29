@@ -1,12 +1,15 @@
-from clinicaio.dataset import *
-
 import shutil
+import json
 
 # IN _env.py:
 #
 # from pathlib import Path
 # test_bids_read_path=Path("/path/to/BIDS_out")
 from _env import test_bids_write_path
+
+from clinicaio.info import ImageScanInfo, SessionInfo, SubjectInfo
+from clinicaio.dataset import *
+from clinicaio.types import BIDSVersion, BIDSDatasetType
 
 bids_path = test_bids_write_path
 

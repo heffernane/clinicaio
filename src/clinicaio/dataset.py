@@ -1,16 +1,15 @@
 from __future__ import annotations
-
-from fileinput import filename
 from typing import Optional, Iterable, Any
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import os
 
+from .info import ImageScanInfo, SessionInfo, SubjectInfo
 from .types import SubjectId, SessionId, Suffix, BIDSException, DataType, FileExtension
 from .entities import Entities
 from .dataset_description import BIDSDatasetDescription
-from .image_query import *
+from .image_query import ImageQuery
 from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
 
 @dataclass
@@ -193,7 +192,7 @@ class BIDSDataset :
 		try:
 			return open(self._bids_path / file_name, mode)
 		except FileExistsError:
-			raise BIDSException(f"can't write root dataset file {filename} as it already exists")
+			raise BIDSException(f"can't write root dataset file {file_name} as it already exists")
 		
 	def add_subject(self, id: SubjectId, info: Optional[SubjectInfo]) -> Subject:
 		if id in self._subjects:
@@ -261,14 +260,6 @@ class BIDSDataset :
 		return (image.get_image_companion_file_path(extension) for image in self.query_images(query))
 
 
-# Populated from participants.tsv from root of dataset
-@dataclass
-class SubjectInfo:
-	# FIXME: proper typing for the fields that BIDS defines?
-	#age, handedness, etc.
-	other_fields: dict[str, Any]
-
-# aka Subject
 # populated from sub-* folders
 @dataclass
 class Subject:
@@ -362,21 +353,6 @@ class Subject:
 				other_fields=info
 			)
 
-
-
-# Populated from sub-<label>/sub-<label>_sessions.tsv
-@dataclass
-class SessionInfo:
-	# TODO: actual date type (handle BIDS units)
-	acquisition_time: Optional[str]
-	pathology: Optional[str]
-	other_fields: dict[str, Any]
-
-	def all_fields(self) -> dict[str, Any]:
-		return self.other_fields | {
-			"acq_time": self.acquisition_time,
-			"pathology": self.pathology,
-		}
 
 @dataclass
 class ImagesWriter:
@@ -559,17 +535,6 @@ class Session:
 			image.scan_info = ImageScanInfo(
 				other_fields=info
 			)
-
-# sidecar file .json
-class ImageInfo:
-	# ...
-	#sidecar_dict: dict[str, Any]
-	pass
-
-@dataclass
-class ImageScanInfo:
-	# TODO: proper typing for fields defined in BIDS specification
-	other_fields: dict[str, Any]
 
 @dataclass
 class Image:
