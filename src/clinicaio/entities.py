@@ -37,11 +37,11 @@ class Entities:
 		Parameters
 		----------
 		entities : list[str]
-			List of the form ["<key1>-<value1>", ....., "<keyN>-<valueN>"]
+			List of the form ``["<key1>-<value1>", ....., "<keyN>-<valueN>"]``
 		
 		Raises
 		------
-		BIDSException:
+		BIDSException
 			if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
 
 		Returns
@@ -71,7 +71,7 @@ class Entities:
 		
 		Raises
 		------
-		BIDSException:
+		BIDSException
 			if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
 
 		Returns

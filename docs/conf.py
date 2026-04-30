@@ -16,11 +16,15 @@ release = "0.1.0"
 
 extensions = [
     "autoapi.extension",
+    "sphinx.ext.napoleon",
     "myst_nb",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+napoleon_numpy_docstring = True
+napoleon_custom_sections = [("Returns", "params_style"), ("Attributes", "params_style")]
 
 # -- autoapi configuration ---------------------------------------------------
 # https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html
@@ -37,6 +41,7 @@ autoapi_options = [
     'special-members',
     'imported-members',
 ]
+autoapi_python_class_content = "both"
 
 
 # -- Options for HTML output -------------------------------------------------

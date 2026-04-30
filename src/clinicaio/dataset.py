@@ -14,11 +14,20 @@ from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
 
 @dataclass
 class BIDSDataset :
+	"""A BIDS dataset"""
+
 	_subjects: dict[SubjectId, Subject]
 	_bids_path: Path
 	description: BIDSDatasetDescription
 
 	def __init__(self, bids_path: Path, description: BIDSDatasetDescription):
+		"""
+		Creates a new BIDS dataset. Useful when you want to write a new dataset to the filesystem.
+
+		See also
+		--------
+		* :py:meth:`write_to_folder()`
+		"""
 		self._bids_path = bids_path
 		self.description = description
 		self._subjects = {}
@@ -72,7 +81,31 @@ class BIDSDataset :
 			)
 
 	@classmethod
-	def populate_from_dir(cls, bids_dir: Path, sessions_info: bool, subjects_info: bool, image_scans_info: bool) -> BIDSDataset:
+	def populate_from_dir(cls, bids_dir: Path, *, subjects_info: bool, sessions_info: bool, image_scans_info: bool) -> BIDSDataset:
+		"""
+		Read a BIDS dataset from the given BIDS directory.
+
+		Parsing the various informations for subjects/sessions/images can be toggled,
+		as these take the bulk of the loading time in most cases, so it's better to
+		avoid reading them if you do not have a use for them. This is due to the informations
+		being stored in tabular/TSV files instead of per-subject/session/image JSON file.
+
+		Parameters
+		----------
+		bids_dir : Path
+			The directory where the BIDS dataset exists
+		subjects_info : bool
+			Whether to fill out subject information from the ``participants.tsv`` file
+		sessions_info : bool
+			Whether to fill out session information from the ``*_sessions.tsv`` file
+		image_scans_info : bool
+			Whether to fill out image scan information from the ``*_scans.tsv`` file
+
+		Raises
+		------
+		BIDSException
+			Whenever an invalid (per BIDS specification) filename/path is encountered while walking the BIDS directory
+		"""
 		unhandled_entries: list[str] = []
 
 		try:
@@ -184,7 +217,36 @@ class BIDSDataset :
 		return dataset
 
 	
-	def write_root_file(self, file_name: str, write_binary: bool) -> Any:
+	def write_root_file(self, file_name: str, *, write_binary: bool) -> Any:
+		"""
+		Creates and opens for writing the given file at the root of the dataset, eventually in "binary" mode
+		(per Python's :py:func:`open`).
+
+		Parameters
+		----------
+		file_name : str
+			The name of the file to write. Must not contain a ``/``
+		write_binary : bool
+			Whether to open the created file in binary or text writing mode
+
+		Raises
+		------
+		BIDSException
+			if the file name contains ``/``, or if the file already exists.
+
+		Returns
+		-------
+		the corresponding file-object opened in writing mode
+
+		Examples
+		--------
+
+		.. code-block:: python
+
+			with dataset.write_root_file("README", write_binary=False) as f:
+				print("Hello world!", file=f)
+		"""
+
 		if "/" in file_name:
 			raise BIDSException(f"BIDSDataset.write_root_file() is not meant to write in sub-folders ({file_name})")
 
@@ -207,10 +269,16 @@ class BIDSDataset :
 
 		return subject
 
-	# Creates the dataset folder, writes the dataset description JSON, creates the subjects and sessions
-	# folders with their TSV files. Images are not written here. To decide what content to write in each image
-	# file, you must then use Session.write_images().
-	def write_dataset(self):
+	def write_to_folder(self):
+		"""
+		Creates the dataset folder, writes the dataset description JSON, creates the subjects and sessions
+		folders with their TSV files. Images are not written here. To decide what content to write in each image
+		file, you must then use :py:meth:`Session.write_images()`
+
+		See also
+		--------
+		* :py:meth:`write_root_file`
+		"""
 		try:
 			os.mkdir(self._bids_path)
 		except FileExistsError:
@@ -230,6 +298,15 @@ class BIDSDataset :
  
 	
 	def query_images(self, query: ImageQuery) -> Iterable[Image]:
+		"""
+		Returns all the images matching the query.
+		See :py:class:`~clinicaio.image_query.ImageQuery` for details on the query itself.
+
+		See also
+		--------
+		* :py:meth:`query_images_nifti_paths`
+		* :py:meth:`query_images_companions_paths`
+		"""
 		filtered_subjects = self.all_subjects() if len(query.subjects) == 0 else (self.subject_by_id(id) for id in query.subjects)
 		
 		for subject in filtered_subjects:
@@ -254,9 +331,17 @@ class BIDSDataset :
 					yield image
 
 	def query_images_nifti_paths(self, query: ImageQuery) -> Iterable[Path]:
+		"""
+		Convenience function that only returns the NIFTI image paths instead of the images themselves.
+		See :py:meth:`query_images`.
+		"""
 		return (image.get_nifti_image_path() for image in self.query_images(query))
 	
 	def query_images_companions_paths(self, query: ImageQuery, extension: FileExtension) -> Iterable[Path]:
+		"""
+		Convenience function that only returns the companion image paths with the given file extension
+		instead of the images themselves. See :py:meth:`query_images`.
+		"""
 		return (image.get_image_companion_file_path(extension) for image in self.query_images(query))
 
 
@@ -356,6 +441,21 @@ class Subject:
 
 @dataclass
 class ImagesWriter:
+	"""
+	Automatic image scan info writer.
+
+	The goal of this class is to automatically write the session's ``*_scans.tsv`` file with all the information
+	provided in each image's scan_info. This is necessary due to the tabular nature of the file, and the missing
+	guarantee that all images will provide the same columns.
+
+	Examples
+	--------
+
+	`Jupyter BIDS writing example <../../../notebooks/demo_BIDS_write_images.ipynb>`__
+
+	TODO: use nbsphinx or myst-nb to display the notebook **inline** here instead of copy pasting or moving it 
+	"""
+
 	session: Session
 	
 	def write_image(
@@ -479,6 +579,13 @@ class Session:
 		return image
 
 	def write_images(self) -> ImagesWriter:
+		"""
+		Start the image writing process for this session. This must happen after calling :py:meth:`BIDSDataset.write_to_folder`.
+		
+		See also
+		--------
+		* :py:class:`ImagesWriter`
+		"""
 		return ImagesWriter(session=self)
 	
 	# read the session's _scans.tsv and fill out scan info for all images
@@ -603,7 +710,28 @@ class Image:
 		return self.parent_session._get_full_path() / f"{self.data_type}/{sub_id}_{ses_id}{entities}{suffix}"
 	
 	def get_image_companion_file_path(self, extension: FileExtension) -> Path:
+		"""
+		BIDS is a format centered around organizing NIFTI image files, but NIFTI does not include
+		all the information that one might want from a brain image or its acquisition process
+		(equipment parameters, etc.). As such each NIFTI image file has zero or more "companion" files
+		(or "sidecar" in BIDS-parlance for the JSON ones) that have the same file name as the main NIFTI
+		ones apart from their file extension.
+		
+		This method returns the path of such an image's companion file given its file extension.
+		
+		.. code-block::
+
+			sub-OAS30542
+			└── ses-M126
+			    └── dwi
+			        ├── sub-OAS30542_ses-M126_run-01_dwi.bval
+			        ├── sub-OAS30542_ses-M126_run-01_dwi.bvec
+			        ├── sub-OAS30542_ses-M126_run-01_dwi.json
+			        └── sub-OAS30542_ses-M126_run-01_dwi.nii.gz
+		
+		"""
 		return self._get_image_base_full_path().with_suffix(f".{extension}")
 	
 	def get_nifti_image_path(self) -> Path:
+		"""Returns the full path to this image's NIFTI file"""
 		return self.get_image_companion_file_path(self.nifti_extension)

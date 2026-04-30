@@ -19,10 +19,10 @@ class ImageQuery:
 	Parameters
 	----------
 	subjects : set[str | SubjectId] | list[str | SubjectId], default=[]
-		The subjects to specifically keep. If empty, includes all of them.
+		The subjects (by their IDs) to specifically keep. If empty, includes all of them.
 	session : set[str | SessionId] | list[str | SessionId], default=[]
-		The subjects to specifically keep. If empty, includes all of them.
-	data_type : Optional[:py:class:`clinicaio.types.DataType`], default=None
+		The subjects (by their IDs) to specifically keep. If empty, includes all of them.
+	data_type : Optional[DataType], default=None
 		The data type of the image. If ``None``, all of them are kept.
 	entities : Entities | dict[str | EntityKey, str | EntityValue] | list[str] | str, default={}
 		The entities to specifically look for in the images. For convenience it can also
@@ -66,6 +66,7 @@ class ImageQuery:
 
 	def __init__(
 		self,
+		*,
 		subjects: set[str | SubjectId] | list[str | SubjectId] = [],
 		sessions: set[str | SessionId] | list[str | SessionId] = [],
 		# FIXME: allow multiple data types at once?

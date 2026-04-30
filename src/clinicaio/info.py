@@ -1,17 +1,19 @@
-
-# sidecar file .json
 from dataclasses import dataclass
 from typing import Any, Optional
 
-
-class ImageInfo:
+# sidecar file .json
+#class ImageInfo:
 	# ...
 	#sidecar_dict: dict[str, Any]
-	pass
+	#pass
 
 
 @dataclass
 class ImageScanInfo:
+	"""
+	`BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#scans-file>`__
+	"""
+	
 	# TODO: proper typing for fields defined in BIDS specification
 	other_fields: dict[str, Any]
 
@@ -19,6 +21,10 @@ class ImageScanInfo:
 # Populated from sub-<label>/sub-<label>_sessions.tsv
 @dataclass
 class SessionInfo:
+	"""
+	`BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#sessions-file>`__
+	"""
+	
 	# TODO: actual date type (handle BIDS units)
 	acquisition_time: Optional[str]
 	pathology: Optional[str]
@@ -34,6 +40,9 @@ class SessionInfo:
 # Populated from participants.tsv from root of dataset
 @dataclass
 class SubjectInfo:
+	"""
+	`BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file>`__
+	"""
 	# FIXME: proper typing for the fields that BIDS defines?
 	#age, handedness, etc.
 	other_fields: dict[str, Any]

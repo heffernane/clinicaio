@@ -58,7 +58,7 @@ session2 = subject1.add_session(
     ),
 )
 
-dataset.write_dataset()
+dataset.write_to_folder()
 with dataset.write_root_file("README", write_binary=False) as readme:
     print("README content",file=readme)
 

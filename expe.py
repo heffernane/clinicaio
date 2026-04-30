@@ -158,7 +158,7 @@ import os
 print("WRITING COPY OF DATASET")
 dataset._bids_path = Path("/tmp/bids_foobar_write")
 shutil.rmtree(dataset._bids_path, ignore_errors=True)
-dataset.write_dataset()
+dataset.write_to_folder()
 for session in dataset.all_sessions():
 	images = list(session.all_images())
 
@@ -173,10 +173,6 @@ for session in dataset.all_sessions():
 				scan_info=image.scan_info
 			)
 			nifti_path = added_image.get_nifti_image_path()
-			try:
-				os.mkdir(nifti_path.parent)
-			except FileExistsError:
-				pass
 			open(nifti_path, mode="x")
 
 
