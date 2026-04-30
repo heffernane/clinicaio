@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Optional, Iterable, Any
 from dataclasses import dataclass, field
 from pathlib import Path
+from functools import cached_property
 
 import os
 
@@ -51,9 +52,13 @@ class BIDSDataset :
 
 	def _get_full_path(self) -> Path:
 		return self._bids_path
+	
+	@cached_property
+	def _participants_tsv_file_name(self) -> str:
+		return "participants.tsv"
 
 	def _populate_subjects_info_from_tsv(self):
-		participants_tsv_path = self._get_full_path() / "participants.tsv"
+		participants_tsv_path = self._get_full_path() / self._participants_tsv_file_name
 		if not os.path.exists(participants_tsv_path):
 			return
 		
@@ -97,9 +102,9 @@ class BIDSDataset :
 		subjects_info : bool
 			Whether to fill out subject information from the ``participants.tsv`` file
 		sessions_info : bool
-			Whether to fill out session information from the ``*_sessions.tsv`` file
+			Whether to fill out session information from the ``*_sessions.tsv`` files
 		image_scans_info : bool
-			Whether to fill out image scan information from the ``*_scans.tsv`` file
+			Whether to fill out image scan information from the ``*_scans.tsv`` files
 
 		Raises
 		------
@@ -118,11 +123,11 @@ class BIDSDataset :
 		# Populate subjects/subjects
 		for bids_child in os.scandir(bids_dir):
 			# Handled once all subjects have been read
-			if bids_child.name == "participants.tsv":
+			if bids_child.name == dataset._participants_tsv_file_name:
 				continue
 
 			# Already handled above
-			if bids_child.name == "dataset_description.json":
+			if bids_child.name == BIDSDatasetDescription._JSON_FILENAME:
 				continue
 
 			if not bids_child.name.startswith("sub-"):
@@ -142,7 +147,7 @@ class BIDSDataset :
 			# Populate subject's sessions
 			for subject_child in os.scandir(bids_child.path):
 				# Handled after all sessions have been read, to fill out the session info from the TSV file
-				if subject_child.name == f"{subject.id}_sessions.tsv":
+				if subject_child.name == subject._sessions_tsv_file_name:
 					continue
 
 				if not subject_child.name.startswith("ses-"):
@@ -161,7 +166,7 @@ class BIDSDataset :
 
 				# Populate the session's images, per-datatype
 				for session_child in os.scandir(subject_child.path):
-					if session_child.name == f"{subject.id}_{session.id}_scans.tsv":
+					if session_child.name == session._scans_tsv_file_name:
 						continue
 
 					try:
@@ -385,6 +390,10 @@ class Subject:
 		for session in self.all_sessions():
 			yield from session.all_images()
 
+	@cached_property
+	def _sessions_tsv_file_name(self) -> str:
+		return f"{self.id}_sessions.tsv"
+	
 	def _write_to_folder(self):
 		subject_path = self._get_full_path()
 		try:
@@ -398,7 +407,7 @@ class Subject:
 			session._write_to_folder()
 
 		_write_rows_to_tsv(
-			subject_path / f"{self.id}_sessions.tsv",
+			subject_path / self._sessions_tsv_file_name,
 			first_column_name="session_id",
 			rows=(
 				session.info.all_fields() | {"session_id": session.id} 
@@ -407,9 +416,9 @@ class Subject:
 			),
 		)
 
-	# read the subject's sessions.tsv and fill out info in all sessions
 	def _populate_sessions_info_from_tsv(self):
-		sessions_tsv_path = self._get_full_path() / f"{self.id}_sessions.tsv"
+		"""Reads the subject's sessions.tsv and fills out info in all sessions"""
+		sessions_tsv_path = self._get_full_path() / self._sessions_tsv_file_name
 		if not os.path.exists(sessions_tsv_path):
 			return
 		
@@ -451,7 +460,7 @@ class ImagesWriter:
 	Examples
 	--------
 
-	`Jupyter BIDS writing example <../../../notebooks/demo_BIDS_write_images.ipynb>`__
+	`Jupyter BIDS writing example <demo_BIDS_write_images.ipynb>`__
 
 	TODO: use nbsphinx or myst-nb to display the notebook **inline** here instead of copy pasting or moving it 
 	"""
@@ -486,10 +495,8 @@ class ImagesWriter:
 	def __exit__(self, exc_type, exc, tb):
 		# Do not write the scans.tsv if an error occurred
 		if all(v is None for v in [exc_type, exc, tb]):
-			sub_id = self.session.parent_subject.id
-			ses_id = self.session.id
 			session_path = self.session._get_full_path()
-			scans_tsv_path = session_path / f"{sub_id}_{ses_id}_scans.tsv"
+			scans_tsv_path = session_path / self.session._scans_tsv_file_name
 
 			rows = (
 				({} if image.scan_info is None else image.scan_info.other_fields)
@@ -588,10 +595,14 @@ class Session:
 		"""
 		return ImagesWriter(session=self)
 	
+	@cached_property
+	def _scans_tsv_file_name(self) -> str:
+		return f"{self.parent_subject.id}_{self.id}_scans.tsv"
+	
 	# read the session's _scans.tsv and fill out scan info for all images
 	def _populate_image_scans_info_from_tsv(self):
 		sub_ses_prefix = f"{self.parent_subject.id}_{self.id}_"
-		scans_tsv_path = self._get_full_path() / f"{sub_ses_prefix}scans.tsv"
+		scans_tsv_path = self._get_full_path() / self._scans_tsv_file_name
 		if not os.path.exists(scans_tsv_path):
 			return
 		
