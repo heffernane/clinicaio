@@ -16,8 +16,8 @@ def test_ids_prefix_with_empty_label():
         SessionId("ses-")
 
 def test_ids_to_str():
-    assert(str(SubjectId("sub-123")) == "sub-123")
-    assert(str(SessionId("ses-123")) == "ses-123")
+    assert str(SubjectId("sub-123")) == "sub-123"
+    assert str(SessionId("ses-123")) == "ses-123"
 
 def test_ids_non_alnum_chars():
     with pytest.raises(BIDSException, match=escape("BIDS subject id sub-é had invalid label (in sub-<label>): BIDS label é must be all [a-zA-Z0-9] characters")):
@@ -33,14 +33,14 @@ def test_ids_hash_eq():
     # to fully integer labels.
     sub1_same_but_different = SubjectId("sub-1")
 
-    assert(sub1.__hash__() == sub1_same.__hash__())
-    assert(sub1 == sub1_same)
-    assert(sub1.__hash__() != sub2.__hash__())
-    assert(sub1.__hash__() != sub1_same_but_different.__hash__())
-    assert(sub1 != sub1_same_but_different)
+    assert sub1.__hash__() == sub1_same.__hash__()
+    assert sub1 == sub1_same
+    assert sub1.__hash__() != sub2.__hash__()
+    assert sub1.__hash__() != sub1_same_but_different.__hash__()
+    assert sub1 != sub1_same_but_different
     # In case __ne__() is broken
-    assert(not(sub1 == sub2))
-    assert(sub1 != sub2)
+    assert not(sub1 == sub2)
+    assert sub1 != sub2
 
     ses1 = SessionId("ses-01")
     ses2 = SessionId("ses-02")
@@ -49,24 +49,24 @@ def test_ids_hash_eq():
     # to fully integer labels.
     ses1_same_but_different = SessionId("ses-1")
 
-    assert(ses1.__hash__() == ses1_same.__hash__())
-    assert(ses1 == ses1_same)
-    assert(ses1.__hash__() != ses2.__hash__())
-    assert(ses1.__hash__() != ses1_same_but_different.__hash__())
-    assert(ses1 != ses1_same_but_different)
+    assert ses1.__hash__() == ses1_same.__hash__()
+    assert ses1 == ses1_same
+    assert ses1.__hash__() != ses2.__hash__()
+    assert ses1.__hash__() != ses1_same_but_different.__hash__()
+    assert ses1 != ses1_same_but_different
     # In case __ne__() is broken
-    assert(not(ses1 == ses2))
-    assert(ses1 != ses2)
+    assert not(ses1 == ses2)
+    assert ses1 != ses2
 
 def test_enum_to_str():
     # We test this notably because while StrEnum has the correct behavior
     # when we inherit from it, class Foo(str, Enum) does not (in some
     # Python versions)
-    assert(str(BIDSDatasetType.RAW) == "raw")
-    assert(str(DataType.PHENOTYPE) == "phenotype")
-    assert(str(FileExtension.NII_GZ) == "nii.gz")
+    assert str(BIDSDatasetType.RAW) == "raw"
+    assert str(DataType.PHENOTYPE) == "phenotype"
+    assert str(FileExtension.NII_GZ) == "nii.gz"
 
 def test_wrappers_to_str():
-    assert(str(Suffix("sfx")) == "sfx")
-    assert(str(BIDSVersion("1.10.0")) == "1.10.0")
-    assert(str(Label("txt")) == "txt")
+    assert str(Suffix("sfx")) == "sfx"
+    assert str(BIDSVersion("1.10.0")) == "1.10.0"
+    assert str(Label("txt")) == "txt"

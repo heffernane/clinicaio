@@ -25,4 +25,4 @@ def test_desc_missing_fields():
 
 def test_default_dataset_type():
     desc = new_desc('{"Name": "TEST", "BIDSVersion": "1.10.0"}')
-    assert(desc.dataset_type == BIDSDatasetType.RAW)
+    assert desc.dataset_type == BIDSDatasetType.RAW
