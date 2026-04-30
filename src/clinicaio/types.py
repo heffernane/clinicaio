@@ -100,19 +100,6 @@ class SessionId:
 class BIDSException(Exception):
 	pass
 
-class BIDSDatasetType(StrEnum):
-	"""
-	`BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/dataset-description.html#dataset_descriptionjson>`__
-	"""
-
-	RAW = "raw"
-	DERIVATIVE = "derivative"
-	STUDY = "study"
-
-class BIDSVersion(str):
-	"""The version of a BIDS dataset"""
-	pass
-
 class DataType(StrEnum):
 	"""
 	`BIDS specification <https://bids-specification.readthedocs.io/en/stable/common-principles.html#definitions>`__

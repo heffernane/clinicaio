@@ -538,7 +538,7 @@ class Session:
 		Parameters
 		----------
 		data_type : Optional[DataType], default=None
-			The data type that the considered images should have to be counted, or None to count all images
+			The data type that the considered images should have to be counted, or ``None`` to count all images
 
 		Returns
 		-------

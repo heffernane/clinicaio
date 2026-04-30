@@ -3,10 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from enum import StrEnum
 
 import json
 
-from .types import BIDSException, BIDSVersion, BIDSDatasetType
+from .types import BIDSException
 
 # dataset_description.json at the root of the BIDS dataset
 @dataclass
@@ -68,3 +69,16 @@ class BIDSDatasetDescription:
 			return BIDSDatasetDescription(name=name, version=BIDSVersion(version), dataset_type=BIDSDatasetType(dataset_type))
 		except ValueError:
 			raise BIDSException(f"invalid dataset type {dataset_type}")
+
+class BIDSDatasetType(StrEnum):
+	"""
+	`BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/dataset-description.html#dataset_descriptionjson>`__
+	"""
+
+	RAW = "raw"
+	DERIVATIVE = "derivative"
+	STUDY = "study"
+
+class BIDSVersion(str):
+	"""The version of a BIDS dataset"""
+	pass

@@ -1,7 +1,9 @@
-from clinicaio.types import *
+from re import escape
 
 import pytest
-from re import escape
+
+from clinicaio.types import BIDSException, SubjectId, SessionId, Suffix, Label, DataType, FileExtension
+from clinicaio.dataset_description import BIDSVersion, BIDSDatasetType
 
 def test_ids_missing_prefix():
     with pytest.raises(BIDSException, match="BIDS subject ID 001 must start with sub-"):

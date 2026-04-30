@@ -3,10 +3,11 @@ from io import StringIO
 
 import pytest
 
-from clinicaio.dataset_description import *
-from clinicaio.types import BIDSDatasetType
+from clinicaio.dataset_description import BIDSDatasetDescription, BIDSDatasetType
+from clinicaio.types import BIDSException
 
 new_desc = lambda json_str: BIDSDatasetDescription._load_from_data(StringIO(json_str))
+
 def test_desc_invalid_json():
     with pytest.raises(BIDSException, match="could not read or parse BIDS JSON description file: "):
         new_desc("!!!!")
