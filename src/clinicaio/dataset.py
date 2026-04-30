@@ -221,46 +221,6 @@ class BIDSDataset :
 		print("UNHANDLED =", unhandled_entries)
 		return dataset
 
-	
-	def write_root_file(self, file_name: str, *, write_binary: bool) -> Any:
-		"""
-		Creates and opens for writing the given file at the root of the dataset, eventually in "binary" mode
-		(per Python's :py:func:`open`).
-
-		Parameters
-		----------
-		file_name : str
-			The name of the file to write. Must not contain a ``/``
-		write_binary : bool
-			Whether to open the created file in binary or text writing mode
-
-		Raises
-		------
-		BIDSException
-			if the file name contains ``/``, or if the file already exists.
-
-		Returns
-		-------
-		the corresponding file-object opened in writing mode
-
-		Examples
-		--------
-
-		.. code-block:: python
-
-			with dataset.write_root_file("README", write_binary=False) as f:
-				print("Hello world!", file=f)
-		"""
-
-		if "/" in file_name:
-			raise BIDSException(f"BIDSDataset.write_root_file() is not meant to write in sub-folders ({file_name})")
-
-		mode = "x" + ("b" if write_binary else "")
-		try:
-			return open(self._bids_path / file_name, mode)
-		except FileExistsError:
-			raise BIDSException(f"can't write root dataset file {file_name} as it already exists")
-		
 	def add_subject(self, id: SubjectId, info: Optional[SubjectInfo]) -> Subject:
 		if id in self._subjects:
 			raise BIDSException(f"tried to add subject of ID {id} but it already exists within this dataset")
@@ -300,6 +260,46 @@ class BIDSDataset :
 			first_column_name="participant_id",
 			rows=(subject.info.other_fields | {"participant_id": subject.id} for subject in self.all_subjects() if subject.info is not None),
 		)
+
+	def write_root_file(self, file_name: str, *, write_binary: bool) -> Any:
+		"""
+		Creates and opens for writing the given file at the root of the dataset, eventually in "binary" mode
+		(per Python's :py:func:`open`).
+
+		Parameters
+		----------
+		file_name : str
+			The name of the file to write. Must not contain a ``/``
+		write_binary : bool
+			Whether to open the created file in binary or text writing mode
+
+		Raises
+		------
+		BIDSException
+			if the file name contains ``/``, or if the file already exists.
+
+		Returns
+		-------
+		the corresponding file-object opened in writing mode
+
+		Examples
+		--------
+
+		.. code-block:: python
+
+			with dataset.write_root_file("README", write_binary=False) as f:
+				print("Hello world!", file=f)
+		"""
+
+		if "/" in file_name:
+			raise BIDSException(f"BIDSDataset.write_root_file() is not meant to write in sub-folders ({file_name})")
+
+		mode = "x" + ("b" if write_binary else "")
+		try:
+			return open(self._bids_path / file_name, mode)
+		except FileExistsError:
+			raise BIDSException(f"can't write root dataset file {file_name} as it already exists")
+
  
 	
 	def query_images(self, query: ImageQuery) -> Iterable[Image]:
@@ -588,7 +588,7 @@ class Session:
 
 	def write_images(self) -> ImagesWriter:
 		"""
-		Start the image writing process for this session. This must happen after calling :py:meth:`BIDSDataset.write_to_folder`.
+		Start the images writing process for this session. This must happen after calling :py:meth:`BIDSDataset.write_to_folder`.
 		
 		See also
 		--------
@@ -720,7 +720,11 @@ class Image:
 		suffix = "" if self.suffix is None else f"_{self.suffix}"
 
 		return self.parent_session._get_full_path() / f"{self.data_type}/{sub_id}_{ses_id}{entities}{suffix}"
-	
+
+	def get_nifti_image_path(self) -> Path:
+		"""Returns the full path to this image's NIFTI file"""
+		return self.get_image_companion_file_path(self.nifti_extension)
+
 	def get_image_companion_file_path(self, extension: FileExtension) -> Path:
 		"""
 		BIDS is a format centered around organizing NIFTI image files, but NIFTI does not include
@@ -743,7 +747,3 @@ class Image:
 		
 		"""
 		return self._get_image_base_full_path().with_suffix(f".{extension}")
-	
-	def get_nifti_image_path(self) -> Path:
-		"""Returns the full path to this image's NIFTI file"""
-		return self.get_image_companion_file_path(self.nifti_extension)
