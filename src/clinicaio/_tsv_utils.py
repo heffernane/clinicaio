@@ -59,6 +59,9 @@ def _write_rows_to_tsv(tsv_path: Path, first_column_name: str, rows: Iterable[di
 		data=(dict_with_first_column(row) for row in rows),
 	)
 
+	if df.empty:
+		return
+
 	# https://bids-specification.readthedocs.io/en/stable/common-principles.html#tabular-files
 	# "Missing and non-applicable values MUST be coded as n/a"
 	# https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.isna.html

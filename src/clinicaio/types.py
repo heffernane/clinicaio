@@ -180,6 +180,9 @@ class Suffix(Label):
 	"""
 	def __hash__(self):
 		return self.value.__hash__()
+	
+	def __repr__(self) -> str:
+		return f"'{self}'"
 
 class FileExtension(StrEnum):
 	"""The file extensions that can be encountered for BIDS image files and their companion files."""

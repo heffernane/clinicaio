@@ -24,3 +24,6 @@ doc: clean.doc install.doc
 install.doc: check.lock
 	@$(POETRY) install --only docs
 
+.PHONY: notebooks
+notebooks: install
+	@$(POETRY) run jupyter notebook notebooks/

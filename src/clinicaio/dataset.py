@@ -499,9 +499,10 @@ class ImagesWriter:
 			scans_tsv_path = session_path / self.session._scans_tsv_file_name
 
 			rows = (
-				({} if image.scan_info is None else image.scan_info.other_fields)
+				image.scan_info.other_fields
 				| { "filename": str(image.get_nifti_image_path().relative_to(session_path)) }
 				for image in self.session.all_images()
+				if image.scan_info is not None
 			)
 
 			# We need to write the scans.tsv at the very end of the ImagesWriter "with ...: " scope because all the images

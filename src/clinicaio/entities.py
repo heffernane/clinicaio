@@ -105,3 +105,7 @@ class Entities:
 
 	def __len__(self) -> int:
 		return len(self._entities)
+	
+	def __repr__(self) -> str:
+		dict_content = ", ".join(f"\"{key}\": \"{value}\"" for key, value in self)
+		return f"Entities({{{dict_content}}})"
