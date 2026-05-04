@@ -26,12 +26,17 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.15"
-pandas = "^3.0.2"
+# ClinicaIO adopts the same Python version policy as Clinica itself, so the dependencies are
+# also impacted by it.
+# See https://scientific-python.org/specs/spec-0000/
+python = ">=3.10,<3.14"
+pandas = ">= 2.3.0,<3.0"
+#nbsphinx = "^0.9.8"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 notebook = "^7.5.5"
+pyfakefs = "^6.2.0"
 
 
 [tool.poetry.group.docs.dependencies]
