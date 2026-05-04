@@ -3,7 +3,9 @@ from re import escape
 import pytest
 
 from clinicaio.types import BIDSException, SubjectId, SessionId, Suffix, Label, DataType, FileExtension
-from clinicaio.dataset_description import BIDSVersion, BIDSDatasetType
+from clinicaio.dataset_description import BIDSDatasetType
+
+from packaging.version import Version
 
 def test_ids_missing_prefix():
     with pytest.raises(BIDSException, match="BIDS subject ID 001 must start with sub-"):
@@ -74,5 +76,5 @@ def test_enum_to_str():
 
 def test_wrappers_to_str():
     assert str(Suffix("sfx")) == "sfx"
-    assert str(BIDSVersion("1.10.0")) == "1.10.0"
+    assert str(Version("1.10.0")) == "1.10.0"
     assert str(Label("txt")) == "txt"

@@ -234,7 +234,7 @@ class BIDSDataset :
 
 		return subject
 
-	def write_to_folder(self, readme: str):
+	def write_to_folder(self, *, readme: str):
 		"""
 		Creates the dataset folder, writes the dataset description JSON, creates the subjects and sessions
 		folders with their TSV files. Images are not written here. To decide what content to write in each image

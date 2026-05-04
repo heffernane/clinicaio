@@ -7,16 +7,27 @@ from enum import Enum
 
 import json
 
+from packaging.version import Version, InvalidVersion
+
 from .types import BIDSException
 
 # dataset_description.json at the root of the BIDS dataset
-@dataclass
+@dataclass(init=False)
 class BIDSDatasetDescription:
 	name: str
-	version: BIDSVersion
+	version: Version
 	dataset_type: BIDSDatasetType
 
 	_JSON_FILENAME = "dataset_description.json"
+
+	def __init__(self, *, name: str, version: str, dataset_type: BIDSDatasetType) -> None:
+		self.name = name
+		try:
+			self.version = Version(version)
+		except InvalidVersion as e:
+			raise BIDSException(f"invalid BIDS version {version}: {e}")
+		
+		self.dataset_type = dataset_type
 
 	def _write_to_folder(self, folder: Path):
 		try:
@@ -66,7 +77,7 @@ class BIDSDatasetDescription:
 			raise BIDSException(f"invalid type for Name field in BIDS JSON description file: {name}")
 
 		try:
-			return BIDSDatasetDescription(name=name, version=BIDSVersion(version), dataset_type=BIDSDatasetType(dataset_type))
+			return BIDSDatasetDescription(name=name, version=version, dataset_type=BIDSDatasetType(dataset_type))
 		except ValueError:
 			raise BIDSException(f"invalid dataset type {dataset_type}")
 
@@ -82,7 +93,3 @@ class BIDSDatasetType(str, Enum):
 	# FIXME: needed until migrated to Python >= 3.11 StrEnum
 	def __str__(self) -> str:
 		return self.value
-
-class BIDSVersion(str):
-	"""The version of a BIDS dataset"""
-	pass
