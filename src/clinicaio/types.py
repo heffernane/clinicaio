@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import Enum
 from dataclasses import dataclass
 
 @dataclass
@@ -100,7 +100,7 @@ class SessionId:
 class BIDSException(Exception):
 	pass
 
-class DataType(StrEnum):
+class DataType(str, Enum):
 	"""
 	`BIDS specification <https://bids-specification.readthedocs.io/en/stable/common-principles.html#definitions>`__
 	"""
@@ -155,6 +155,9 @@ class DataType(StrEnum):
 
 	def __repr__(self) -> str:
 		return f"'{self}'"
+	
+	def __str__(self) -> str:
+		return self.value
 
 @dataclass
 class Suffix(Label):
@@ -168,10 +171,11 @@ class Suffix(Label):
 	def __hash__(self):
 		return self.value.__hash__()
 	
+	# FIXME: needed until migrated to Python >= 3.11 StrEnum
 	def __repr__(self) -> str:
 		return f"'{self}'"
 
-class FileExtension(StrEnum):
+class FileExtension(str, Enum):
 	"""The file extensions that can be encountered for BIDS image files and their companion files."""
 
 	NII = "nii"
@@ -202,3 +206,7 @@ class FileExtension(StrEnum):
 
 	def __repr__(self) -> str:
 		return f"'{self}'"
+	
+	# FIXME: needed until migrated to Python >= 3.11 StrEnum
+	def __str__(self) -> str:
+		return self.value

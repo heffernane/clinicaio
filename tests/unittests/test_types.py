@@ -63,10 +63,14 @@ def test_ids_hash_eq():
 def test_enum_to_str():
     # We test this notably because while StrEnum has the correct behavior
     # when we inherit from it, class Foo(str, Enum) does not (in some
-    # Python versions)
+    # Python versions). str(A.FOO) outputs A.FOO in Python 3.10 but f"{A.FOO}" outputs foo
+    # (as f"..." goes through __format__() which seems to have a different implementation)
     assert str(BIDSDatasetType.RAW) == "raw"
     assert str(DataType.PHENOTYPE) == "phenotype"
     assert str(FileExtension.NII_GZ) == "nii.gz"
+    assert f"{BIDSDatasetType.RAW}" == "raw"
+    assert f"{DataType.PHENOTYPE}" == "phenotype"
+    assert f"{FileExtension.NII_GZ}" == "nii.gz"
 
 def test_wrappers_to_str():
     assert str(Suffix("sfx")) == "sfx"

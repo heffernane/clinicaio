@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from enum import StrEnum
+from enum import Enum
 
 import json
 
@@ -70,7 +70,7 @@ class BIDSDatasetDescription:
 		except ValueError:
 			raise BIDSException(f"invalid dataset type {dataset_type}")
 
-class BIDSDatasetType(StrEnum):
+class BIDSDatasetType(str, Enum):
 	"""
 	`BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/dataset-description.html#dataset_descriptionjson>`__
 	"""
@@ -78,6 +78,10 @@ class BIDSDatasetType(StrEnum):
 	RAW = "raw"
 	DERIVATIVE = "derivative"
 	STUDY = "study"
+
+	# FIXME: needed until migrated to Python >= 3.11 StrEnum
+	def __str__(self) -> str:
+		return self.value
 
 class BIDSVersion(str):
 	"""The version of a BIDS dataset"""
