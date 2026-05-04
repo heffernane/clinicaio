@@ -234,7 +234,7 @@ class BIDSDataset :
 
 		return subject
 
-	def write_to_folder(self):
+	def write_to_folder(self, readme: str):
 		"""
 		Creates the dataset folder, writes the dataset description JSON, creates the subjects and sessions
 		folders with their TSV files. Images are not written here. To decide what content to write in each image
@@ -260,6 +260,9 @@ class BIDSDataset :
 			first_column_name="participant_id",
 			rows=(subject.info.other_fields | {"participant_id": subject.id} for subject in self.all_subjects() if subject.info is not None),
 		)
+
+		with self.write_root_file("README", write_binary=False) as f:
+			print(readme, file=f)
 
 	def write_root_file(self, file_name: str, *, write_binary: bool) -> Any:
 		"""

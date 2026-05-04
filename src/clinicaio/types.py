@@ -199,6 +199,6 @@ class FileExtension(StrEnum):
 	def is_nifti(self) -> bool:
 		"""Returns whether this is a NIFTI file extension (as compressed form is also common)"""
 		return self == FileExtension.NII or self == FileExtension.NII_GZ
-	
+
 	def __repr__(self) -> str:
 		return f"'{self}'"
