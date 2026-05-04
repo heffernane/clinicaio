@@ -67,27 +67,29 @@ class ImageQuery:
 	def __init__(
 		self,
 		*,
-		subjects: Iterable[str | SubjectId] = [],
-		sessions: Iterable[str | SessionId] = [],
+		subjects: Optional[Iterable[str | SubjectId]] = None,
+		sessions: Optional[Iterable[str | SessionId]] = None,
 		# FIXME: allow multiple data types at once?
 		data_type: Optional[DataType] = None,
 		# { "trc": "11CPIB", "run": "1"}
 		# or "trc-11CPIB_run-1"
 		# or ["trc-11CPIB", "run-1"]
-		entities: Entities | dict[str | EntityKey, str | EntityValue] | list[str] | str = {},
+		entities: Optional[Entities | dict[str | EntityKey, str | EntityValue] | list[str] | str] = None,
 		# +/- modality
 		suffix: Optional[str | Suffix] = None,
 	):
 		type_or_type_from_val = lambda v, typ: v if isinstance(v, typ) else typ(v)
 
-		self.subjects = set(type_or_type_from_val(id, SubjectId) for id in subjects)
-		self.sessions = set(type_or_type_from_val(id, SessionId) for id in sessions)
+		self.subjects = set() if subjects is None else set(type_or_type_from_val(id, SubjectId) for id in subjects)
+		self.sessions = set() if sessions is None else set(type_or_type_from_val(id, SessionId) for id in sessions)
 		if not ((data_type is None) or (type(data_type) == DataType)):
 			raise BIDSException(f"invalid type {type(data_type)} for data_type argument")
 		
 		self.data_type = data_type
 
-		if isinstance(entities, str):
+		if entities is None:
+			self.entities = Entities({})
+		elif isinstance(entities, str):
 			self.entities = Entities.from_str(entities)
 		elif isinstance(entities, list):
 			if not all(isinstance(entity, str) for entity in entities):
