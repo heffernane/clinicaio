@@ -35,17 +35,6 @@ def _write_rows_to_tsv(tsv_path: Path, first_column_name: str, rows: Iterable[di
 		if the ``first_column_name`` is not provided for one of the rows, or if the TSV file already exists.
 	"""
 
-	# The ID column in BIDS TSV files is usually required to be the first one. In practice it's
-	# not always the case when we read them, but let's enforce it when writing them.
-	def dict_with_first_column(values: dict[str, Any]) -> OrderedDict[str, Any]:
-		ordered_dict = OrderedDict(values)
-		try:
-			ordered_dict.move_to_end(first_column_name, last=False)
-		except KeyError:
-			raise BIDSException(f"expected required column {first_column_name} when writing TSV file {tsv_path}, but only found columns {values.keys()}")
-
-		return ordered_dict
-
 	# NOTE: Pandas handles correctly the case where different rows do not all have the same available columns: 
 	# >>> pd.DataFrame([
 	# ... namedtuple("A", ["a", "b"])(a=1, b=2)._asdict(),
@@ -55,11 +44,29 @@ def _write_rows_to_tsv(tsv_path: Path, first_column_name: str, rows: Iterable[di
 	# 0  1.0  2  NaN
 	# 1  NaN  3  4.0
 	df = pd.DataFrame(
-		data=(dict_with_first_column(row) for row in rows),
+		data=rows,
 	)
 
 	if df.empty:
 		return
+
+	first_column_by_name = df.get(first_column_name)
+	if first_column_by_name is None or first_column_by_name.isna().any():
+		raise BIDSException(f"one of the provided rows did not have the required column {first_column_name}")
+
+	cols = list(df.columns)
+	try:
+		first_col_idx = cols.index(first_column_name)
+	except ValueError:
+		raise BIDSException(f"expected required column {first_column_name} when writing TSV file {tsv_path}, but only found columns {cols}")
+
+	# The ID column in BIDS TSV files is usually required to be the first one. In practice it's
+	# not always the case when we read them, but let's enforce it when writing them.
+	if first_col_idx != 0:
+		col_name = cols.pop(first_col_idx)
+		assert col_name == first_column_name
+		cols.insert(0, first_column_name)
+		df = df.reindex(columns=cols)
 
 	# https://bids-specification.readthedocs.io/en/stable/common-principles.html#tabular-files
 	# "Missing and non-applicable values MUST be coded as n/a"

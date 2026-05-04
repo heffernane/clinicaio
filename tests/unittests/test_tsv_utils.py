@@ -119,7 +119,7 @@ def test_write_tsv_first_column_reordering(fakefs: FakeFilesystem):
         first_column_name="aaa", 
         rows = [
             {"colb": None, "aaa": "bbb", "ddd": None},
-            {"aaa": "ddd", "colb": "cellb", "ddd": "val"},
+            {"colb": "cellb", "ddd": "val", "aaa": "ddd"},
             {"colb": "cella", "aaa": "ccc", "ddd": None},
         ],
     )
@@ -127,7 +127,7 @@ def test_write_tsv_first_column_reordering(fakefs: FakeFilesystem):
     expected_tsv = "aaa\tcolb\tddd\nbbb\tn/a\tn/a\nddd\tcellb\tval\nccc\tcella\tn/a\n"
     assert fakefs.get_object(tsv_path).contents == expected_tsv
 
-def write_tsv_partial_columns_each_row(fakefs: FakeFilesystem):
+def test_write_tsv_partial_columns_each_row(fakefs: FakeFilesystem):
     tsv_path = Path("/tmp/foobar.tsv")
 
     _write_rows_to_tsv(
@@ -142,3 +142,37 @@ def write_tsv_partial_columns_each_row(fakefs: FakeFilesystem):
 
     expected_tsv = "aaa\tbbb\tccc\tddd\n1\tb1\tn/a\tn/a\n2\tn/a\tc2\tn/a\n3\tb3\tn/a\td3\n"
     assert fakefs.get_object(tsv_path).contents == expected_tsv
+
+def test_write_tsv_missing_first_column_for_row(fakefs: FakeFilesystem):
+    tsv_path = Path("/tmp/foobar.tsv")
+
+    with pytest.raises(BIDSException, match="one of the provided rows did not have the required column aaa"):
+        _write_rows_to_tsv(
+            tsv_path=tsv_path, 
+            first_column_name="aaa", 
+            rows = [
+                {"aaa": "1", "bbb": "b1"},
+                # Missing first column here
+                {"ccc": "c2"},
+                {"aaa": "3", "ddd": "d3", "bbb": "b3"}
+            ],
+        )
+    
+    assert not fakefs.exists(tsv_path)
+
+def test_write_tsv_missing_first_column_for_all_rows(fakefs: FakeFilesystem):
+    tsv_path = Path("/tmp/foobar.tsv")
+
+    with pytest.raises(BIDSException, match="one of the provided rows did not have the required column aaa"):
+        _write_rows_to_tsv(
+            tsv_path=tsv_path, 
+            first_column_name="aaa", 
+            rows = [
+                # All of the rows are missing the first column
+                {"bbb": "b1"},
+                {"ccc": "c2"},
+                {"ddd": "d3", "bbb": "b3"}
+            ],
+        )
+    
+    assert not fakefs.exists(tsv_path)
