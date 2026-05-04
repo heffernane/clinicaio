@@ -2,7 +2,7 @@ from __future__ import annotations
 
 __all__ = ["ImageQuery"]
 
-from typing import Optional
+from typing import Iterable, Optional
 from dataclasses import dataclass
 
 from .entities import Entities, EntityKey, EntityValue
@@ -58,7 +58,7 @@ class ImageQuery:
 		images = dataset.query_images(image_query)
 	"""
 
-	subjects: set[SubjectId]
+	subjects: set[SubjectId] 
 	sessions: set[SessionId]
 	data_type: Optional[DataType]
 	entities: Entities
@@ -67,11 +67,11 @@ class ImageQuery:
 	def __init__(
 		self,
 		*,
-		subjects: set[str | SubjectId] | list[str | SubjectId] = [],
-		sessions: set[str | SessionId] | list[str | SessionId] = [],
+		subjects: Iterable[str | SubjectId] = [],
+		sessions: Iterable[str | SessionId] = [],
 		# FIXME: allow multiple data types at once?
 		data_type: Optional[DataType] = None,
-		# { "trc": "11CPIB", "run": 1}
+		# { "trc": "11CPIB", "run": "1"}
 		# or "trc-11CPIB_run-1"
 		# or ["trc-11CPIB", "run-1"]
 		entities: Entities | dict[str | EntityKey, str | EntityValue] | list[str] | str = {},
