@@ -142,78 +142,13 @@ class BIDSDataset :
 			except BIDSException as e:
 				raise BIDSException(f"Found invalid subject/subject ID {bids_child.name}: {e}")
 			
-			subject = dataset.add_subject(id=subject_id, info=None)
+			try:
+				subject = dataset.add_subject(id=subject_id, info=None)
 
-			# Populate subject's sessions
-			for subject_child in os.scandir(bids_child.path):
-				# Handled after all sessions have been read, to fill out the session info from the TSV file
-				if subject_child.name == subject._sessions_tsv_file_name:
-					continue
-
-				if not subject_child.name.startswith("ses-"):
-					unhandled_entries.append(subject_child.path)
-					continue
-
-				if not subject_child.is_dir():
-					raise BIDSException(f"found ses- entry {bids_child.name}/{subject_child.name} that was not a directory")
-
-				try:
-					session_id = SessionId(subject_child.name)
-				except BIDSException as e:
-					raise BIDSException(f"Found invalid session ID {subject_child.name}: {e}")
-				
-				session = subject.add_session(id=session_id, info=None)
-
-				# Populate the session's images, per-datatype
-				for session_child in os.scandir(subject_child.path):
-					if session_child.name == session._scans_tsv_file_name:
-						continue
-
-					try:
-						data_type = DataType(session_child.name)
-					except:
-						unhandled_entries.append(session_child.path)
-						continue
-
-					if not session_child.is_dir():
-						raise BIDSException(f"Found data type entry {bids_child.name}/{subject_child.name}/{session_child.name} that was not a directory")
-
-					for data_type_child in os.scandir(session_child.path):
-						sub_ses_prefix = f"{subject.id}_{session.id}_"
-						if not data_type_child.name.startswith(sub_ses_prefix):
-							raise BIDSException(f"expected {bids_child.name}/{subject_child.name}/{session_child.name}/{data_type_child.name} \
-								filename to start with {sub_ses_prefix} due to its placement in the BIDS directory hierarchy")
-						
-						after_sub_ses = data_type_child.name.removeprefix(sub_ses_prefix)
-
-						filename_components = Image._parse_filename_components(after_sub_ses, data_type_child.path)
-						if filename_components is None:
-							unhandled_entries.append(data_type_child.path)
-							continue
-						entities, suffix, extension = filename_components
-
-						# All the usual filename validation is done for non-NIFTI files, so that
-						# we do not end up in a situation where the companion files (.json, etc.)
-						# are inaccessible due to invalid naming. We do not store those companion
-						# files however: we just validate the paths, but only actually accessing
-						# such companion files by their paths will tell whether a particular one exists.
-						if not extension.is_nifti():
-							continue
-
-						session._add_image(
-							data_type=data_type,
-
-							nifti_extension=extension, 
-							entities=entities, 
-							suffix=suffix,
-							scan_info=None,
-						)
-				if image_scans_info:
-					session._populate_image_scans_info_from_tsv()
-			
-			if sessions_info:
-				subject._populate_sessions_info_from_tsv()
-		
+				unhandled_entries += subject._populate_sessions_from_folder(sessions_info=sessions_info, image_scans_info=image_scans_info)
+			except Exception as e:
+				raise BIDSException(f"got exception while adding subject {subject_id} and populating its sessions: {e}")
+	
 		if subjects_info:
 			dataset._populate_subjects_info_from_tsv()
 
@@ -450,6 +385,39 @@ class Subject:
 				other_fields=info
 			)
 
+	def _populate_sessions_from_folder(self, *, sessions_info: bool, image_scans_info: bool) -> list[str]:
+		unhandled_entries: list[str] = []
+
+		# Populate subject's sessions
+		for child in os.scandir(self._get_full_path()):
+			# Handled after all sessions have been read, to fill out the session info from the TSV file
+			if child.name == self._sessions_tsv_file_name:
+				continue
+
+			if not child.name.startswith("ses-"):
+				unhandled_entries.append(child.path)
+				continue
+
+			if not child.is_dir():
+				raise BIDSException(f"found ses- entry {child.name} that was not a directory")
+
+			try:
+				session_id = SessionId(child.name)
+			except BIDSException as e:
+				raise BIDSException(f"Found invalid session ID {child.name}: {e}")
+			
+			try:
+				session = self.add_session(id=session_id, info=None)
+
+				session._populate_images_from_folder(image_scans_info=image_scans_info)
+			except Exception as e:
+				raise BIDSException(f"got exception while adding session {session_id} and populating its images: {e}")
+		
+		if sessions_info:
+			self._populate_sessions_info_from_tsv()
+
+		return unhandled_entries
+
 
 @dataclass
 class ImagesWriter:
@@ -561,7 +529,7 @@ class Session:
 			raise BIDSException(f"BIDS session folder {session_path} can't be written as it already exists")
 		except FileNotFoundError:
 			raise BIDSException(f"BIDS session folder {session_path} can't be written as one of its parent folders is missing")
-		
+
 	def _add_image(
 		self,
 		data_type: DataType,
@@ -634,7 +602,7 @@ class Session:
 
 			after_sub_ses = image_basename.removeprefix(sub_ses_prefix)
 			try:
-				filename_components = Image._parse_filename_components(after_sub_ses, str(image_filename))
+				filename_components = Image._parse_filename_components(after_sub_ses)
 			except BIDSException as e:
 				raise BIDSException(f"found invalid image filename {image_filename} in _scans.tsv file {scans_tsv_path}: {e}")
 
@@ -658,6 +626,65 @@ class Session:
 				other_fields=info
 			)
 
+	def _populate_images_from_folder(self, *, image_scans_info: bool) -> list[str]:
+		unhandled_entries: list[str] = []
+
+		# Populate the session's images, per-datatype
+		for child in os.scandir(self._get_full_path()):
+			if child.name == self._scans_tsv_file_name:
+				continue
+
+			try:
+				data_type = DataType(child.name)
+			except:
+				unhandled_entries.append(child.path)
+				continue
+
+			if not child.is_dir():
+				raise BIDSException(f"Found data type entry {data_type} that was not a directory")
+
+			for child_image in os.scandir(child.path):
+				sub_ses_prefix = f"{self.parent_subject.id}_{self.id}_"
+				if not child_image.name.startswith(sub_ses_prefix):
+					raise BIDSException(f"expected {data_type}/{child_image.name} \
+						filename to start with {sub_ses_prefix} due to its placement in the BIDS directory hierarchy")
+				
+				after_sub_ses = child_image.name.removeprefix(sub_ses_prefix)
+
+				try:
+					filename_components = Image._parse_filename_components(after_sub_ses)
+				except BIDSException as e:
+					raise BIDSException(f"Found invalid image filename {child_image.name} in folder {data_type}: {e}")
+				
+				# For now we just exclude any file without a file extension, without raising
+				# an error.
+				if filename_components is None:
+					unhandled_entries.append(child_image.path)
+					continue
+				entities, suffix, extension = filename_components
+
+				# All the usual filename validation is done for non-NIFTI files, so that
+				# we do not end up in a situation where the companion files (.json, etc.)
+				# are inaccessible due to invalid naming. We do not store those companion
+				# files however: we just validate the paths, but only actually accessing
+				# such companion files by their paths will tell whether a particular one exists.
+				if not extension.is_nifti():
+					continue
+
+				self._add_image(
+					data_type=data_type,
+
+					nifti_extension=extension, 
+					entities=entities, 
+					suffix=suffix,
+					scan_info=None,
+				)
+		
+		if image_scans_info:
+			self._populate_image_scans_info_from_tsv()
+
+		return unhandled_entries
+
 @dataclass
 class Image:
 	parent_session: Session = field(repr=False, compare=False)
@@ -672,8 +699,20 @@ class Image:
 	# sidecar .json
 	#info: ImageInfo
 
+	@cached_property
+	def json_sidecar(self) -> dict[str, Any]:
+		import json
+
+		sidecar_path = self.get_image_companion_file_path(FileExtension.JSON)
+		with open(sidecar_path, mode="r") as f:
+			json_dict = json.load(f)
+			if not isinstance(json_dict, dict):
+				raise BIDSException(f"expected JSON sidecar {sidecar_path} to contain an object as root node")
+
+		return json_dict
+
 	@staticmethod
-	def _parse_filename_components(filename_after_sub_ses: str, full_path: str) -> Optional[tuple[Entities, Optional[Suffix], FileExtension]]:
+	def _parse_filename_components(filename_after_sub_ses: str) -> Optional[tuple[Entities, Optional[Suffix], FileExtension]]:
 		"""
 		A given BIDS image filename is of the form ``sub-<label_ses-<label>_<rest>``,
 		where ``<rest>`` is ``<entities>[_<suffix>].<extension>``.
@@ -689,13 +728,13 @@ class Image:
 
 		entities_and_suffix = before_ext
 		if len(entities_and_suffix) == 0:
-			raise BIDSException(f"found image filename {filename_after_sub_ses} of path {full_path} without any entity or suffix")
+			raise BIDSException(f"found image filename {filename_after_sub_ses} without any entity or suffix")
 
 		try:
 			extension = FileExtension(file_ext)
 		except ValueError:
 			# If this happens for legitimate files, you may need to add the file extension to the enumeration
-			raise BIDSException(f"Found unknown file extension {file_ext} for filename {filename_after_sub_ses} of path {full_path}")
+			raise BIDSException(f"Found unknown file extension {file_ext} for filename {filename_after_sub_ses}")
 		
 		entities = entities_and_suffix.split("_")
 		suffix = None
@@ -703,14 +742,14 @@ class Image:
 			try:
 				suffix = Suffix(entities[-1])
 			except BIDSException as e:
-				raise BIDSException(f"found invalid suffix label for image filename {filename_after_sub_ses} of path {full_path}: {e}")
+				raise BIDSException(f"found invalid suffix label for image filename {filename_after_sub_ses}: {e}")
 			
 			entities = entities[:-1]
 		
 		try:
 			entities = Entities.from_str_list(entities)
 		except BIDSException as e:
-			raise BIDSException(f"found invalid entities for image filename {filename_after_sub_ses} of path {full_path}: {e}")
+			raise BIDSException(f"found invalid entities for image filename {filename_after_sub_ses}: {e}")
 		
 		return (entities, suffix, extension)
 
