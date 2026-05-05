@@ -66,8 +66,8 @@ class BIDSDataset :
 		if "participant_id" not in subject_tsv_df.columns:
 			raise BIDSException(f"{participants_tsv_path} did not have required participant_id column")
 		
-		for df_row in subject_tsv_df.itertuples(index=False):
-			info: dict[str, Any] = df_row._asdict()
+		infos: list[dict[str, Any]] = subject_tsv_df.to_dict(orient="records") # type: ignore
+		for info in infos:
 			subject_id = info.pop("participant_id", None)
 			if subject_id == None:
 				continue
@@ -367,8 +367,8 @@ class Subject:
 		if "session_id" not in sessions_tsv_df.columns:
 			raise BIDSException(f"found sessions.tsv file {sessions_tsv_path} without required session_id column")
 
-		for df_row in sessions_tsv_df.itertuples(index=False):
-			info: dict[str, Any] = df_row._asdict()
+		infos: list[dict[str, Any]] = sessions_tsv_df.to_dict(orient="records") # type: ignore
+		for info in infos:
 			session_id = info.pop("session_id", None)
 			if session_id == None:
 				continue
@@ -587,8 +587,8 @@ class Session:
 		if "filename" not in scans_tsv_df.columns:
 			raise BIDSException(f"found _scans.tsv file {scans_tsv_path} without required filename column")
 
-		for df_row in scans_tsv_df.itertuples(index=False):
-			info: dict[str, Any] = df_row._asdict()
+		infos: list[dict[str, Any]] = scans_tsv_df.to_dict(orient="records") # type: ignore
+		for info in infos:
 			image_filename = info.pop("filename", None)
 			if image_filename == None:
 				continue
