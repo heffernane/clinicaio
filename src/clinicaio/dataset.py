@@ -6,6 +6,8 @@ from functools import cached_property
 
 import os
 
+from pandas import DataFrame
+
 from .info import ImageScanInfo, SessionInfo, SubjectInfo
 from .types import SubjectId, SessionId, Suffix, BIDSException, DataType, FileExtension
 from .entities import Entities, EntitiesLike
@@ -56,17 +58,26 @@ class BIDSDataset :
 	@cached_property
 	def _participants_tsv_file_name(self) -> str:
 		return "participants.tsv"
+	
+	def populate_subjects_info_from_df(self, participants_tsv_df: DataFrame):
+		"""
+		Populates the subjects informations from the given dataframe.
+		The dataframe must have a ``participant_id`` column which corresponds to
+		a subject's ID that's already present in this dataset. The other columns
+		will be used as informations for the subject at hand: they will not be
+		merged with the existing ones, instead they'll be replaced entirely.
 
-	def _populate_subjects_info_from_tsv(self):
-		participants_tsv_path = self._get_full_path() / self._participants_tsv_file_name
-		if not os.path.exists(participants_tsv_path):
-			return
+		Warnings
+		--------
+		You should only ever use this function if it is more convenient enough
+		for your use case when you are writing a new BIDS dataset. Filling-in
+		the information directly from :py:meth:`add_subject` should be favored.
+		"""
+
+		if "participant_id" not in participants_tsv_df.columns:
+			raise BIDSException(f"dataframe did not have required participant_id column")
 		
-		subject_tsv_df = _read_tsv_as_df(participants_tsv_path)
-		if "participant_id" not in subject_tsv_df.columns:
-			raise BIDSException(f"{participants_tsv_path} did not have required participant_id column")
-		
-		infos: list[dict[str, Any]] = subject_tsv_df.to_dict(orient="records") # type: ignore
+		infos: list[dict[str, Any]] = participants_tsv_df.to_dict(orient="records") # type: ignore
 		for info in infos:
 			subject_id = info.pop("participant_id", None)
 			if subject_id == None:
@@ -74,7 +85,7 @@ class BIDSDataset :
 			try:
 				subject_id = SubjectId(str(subject_id))
 			except BIDSException as e:
-				raise BIDSException(f"found invalid subject ID {subject_id} in TSV file {participants_tsv_path}: {e}")
+				raise BIDSException(f"found invalid subject ID {subject_id} in dataframe: {e}")
 			
 			subject = self.subject_by_id(subject_id)
 			if subject is None:
@@ -84,6 +95,18 @@ class BIDSDataset :
 			subject.info = SubjectInfo(
 				other_fields=info
 			)
+
+	def _populate_subjects_info_from_tsv(self):
+		participants_tsv_path = self._get_full_path() / self._participants_tsv_file_name
+		if not os.path.exists(participants_tsv_path):
+			return
+		
+		participants_tsv_df = _read_tsv_as_df(participants_tsv_path)
+		try:
+			self.populate_subjects_info_from_df(participants_tsv_df)
+		except BIDSException as e:
+			raise BIDSException(f"could not populate subjects info from TSV file {participants_tsv_path}: {e}")
+
 
 	@classmethod
 	def populate_from_dir(cls, bids_dir: Path, *, subjects_info: bool, sessions_info: bool, image_scans_info: bool) -> BIDSDataset:
@@ -356,16 +379,24 @@ class Subject:
 				for session in self.all_sessions()
 			),
 		)
+	
+	def populate_sessions_info_from_df(self, sessions_tsv_df: DataFrame):
+		"""
+		Populates the sessions informations from the given dataframe.
+		The dataframe must have a ``session_id`` column which corresponds to
+		a session's ID that's already present in this dataset's subject. The other columns
+		will be used as informations for the session at hand: they will not be
+		merged with the existing ones, instead they'll be replaced entirely.
 
-	def _populate_sessions_info_from_tsv(self):
-		"""Reads the subject's sessions.tsv and fills out info in all sessions"""
-		sessions_tsv_path = self._get_full_path() / self._sessions_tsv_file_name
-		if not os.path.exists(sessions_tsv_path):
-			return
-		
-		sessions_tsv_df = _read_tsv_as_df(sessions_tsv_path)
+		Warnings
+		--------
+		You should only ever use this function if it is more convenient enough
+		for your use case when you are writing a new BIDS dataset. Filling-in
+		the information directly from :py:meth:`add_session` should be favored.
+		"""
+
 		if "session_id" not in sessions_tsv_df.columns:
-			raise BIDSException(f"found sessions.tsv file {sessions_tsv_path} without required session_id column")
+			raise BIDSException(f"dataframe did not have required session_id column")
 
 		infos: list[dict[str, Any]] = sessions_tsv_df.to_dict(orient="records") # type: ignore
 		for info in infos:
@@ -375,7 +406,7 @@ class Subject:
 			try:
 				session_id = SessionId(str(session_id))
 			except BIDSException as e:
-				raise BIDSException(f"found invalid session ID {session_id} in sessions.tsv file {sessions_tsv_path}: {e}")
+				raise BIDSException(f"found invalid session ID {session_id} in dataframe: {e}")
 			
 			session = self.session_by_id(session_id)
 			if session is None:
@@ -387,6 +418,18 @@ class Subject:
 				pathology=info.pop("pathology", None),
 				other_fields=info
 			)
+
+	def _populate_sessions_info_from_tsv(self):
+		"""Reads the subject's sessions.tsv and fills out info in all sessions"""
+		sessions_tsv_path = self._get_full_path() / self._sessions_tsv_file_name
+		if not os.path.exists(sessions_tsv_path):
+			return
+		
+		sessions_tsv_df = _read_tsv_as_df(sessions_tsv_path)
+		try:
+			self.populate_sessions_info_from_df(sessions_tsv_df)
+		except BIDSException as e:
+			raise BIDSException(f"could not populate sessions info from TSV file {sessions_tsv_path}: {e}")
 
 	def _populate_sessions_from_folder(self, *, sessions_info: bool, image_scans_info: bool) -> list[str]:
 		unhandled_entries: list[str] = []
@@ -576,16 +619,26 @@ class Session:
 	def _scans_tsv_file_name(self) -> str:
 		return f"{self.parent_subject.id}_{self.id}_scans.tsv"
 	
-	# read the session's _scans.tsv and fill out scan info for all images
-	def _populate_image_scans_info_from_tsv(self):
-		sub_ses_prefix = f"{self.parent_subject.id}_{self.id}_"
-		scans_tsv_path = self._get_full_path() / self._scans_tsv_file_name
-		if not os.path.exists(scans_tsv_path):
-			return
-		
-		scans_tsv_df = _read_tsv_as_df(scans_tsv_path)
+	def populate_image_scans_info_from_df(self, scans_tsv_df: DataFrame):
+		"""
+		Populates the images informations from the given dataframe.
+		The dataframe must have a ``filename`` column which corresponds to
+		the relative path of the image file relative to its parent session/this session,
+		e.g. ``<data type>/sub-..._ses-..._<.....>.nii.gz``. The corresponding
+		Image must already be present in this session. The other columns
+		will be used as informations for the image at hand: they will not be
+		merged with the existing ones, instead they'll be replaced entirely.
+
+		Warnings
+		--------
+		You should only ever use this function if it is more convenient enough
+		for your use case when you are writing a new BIDS dataset. Filling-in
+		the information directly from :py:meth:`ImagesWriter.write_image` should be favored.
+		"""
 		if "filename" not in scans_tsv_df.columns:
-			raise BIDSException(f"found _scans.tsv file {scans_tsv_path} without required filename column")
+			raise BIDSException(f"dataframe did not have required filename column")
+		
+		sub_ses_prefix = f"{self.parent_subject.id}_{self.id}_"
 
 		infos: list[dict[str, Any]] = scans_tsv_df.to_dict(orient="records") # type: ignore
 		for info in infos:
@@ -595,24 +648,24 @@ class Session:
 			try:
 				data_type, image_basename = str(image_filename).split(sep="/", maxsplit=1)
 			except ValueError:
-				raise BIDSException(f"expected image/scan filename of format <data_type>/<...> for {image_filename} in _scans.tsv file {scans_tsv_path}")
+				raise BIDSException(f"expected image/scan filename of format <data_type>/<...> for {image_filename} in dataframe")
 			
 			try:
 				data_type = DataType(data_type)
 			except ValueError:
-				raise BIDSException(f"expected valid data type as first folder of filename {image_filename} in _scans.tsv file {scans_tsv_path}")
+				raise BIDSException(f"expected valid data type as first folder of filename {image_filename} in dataframe")
 			
 			if not image_basename.startswith(sub_ses_prefix):
-				raise BIDSException(f"expected image basename {image_basename} of filename {image_filename} in _scans.tsv file {scans_tsv_path} to have prefix {sub_ses_prefix}")
+				raise BIDSException(f"expected image basename {image_basename} of filename {image_filename} in dataframe to have prefix {sub_ses_prefix}")
 
 			after_sub_ses = image_basename.removeprefix(sub_ses_prefix)
 			try:
 				filename_components = Image._parse_filename_components(after_sub_ses)
 			except BIDSException as e:
-				raise BIDSException(f"found invalid image filename {image_filename} in _scans.tsv file {scans_tsv_path}: {e}")
+				raise BIDSException(f"found invalid image filename {image_filename} in dataframe: {e}")
 
 			if filename_components is None:
-				raise BIDSException(f"found image filename {image_filename} in _scans.tsv file {scans_tsv_path} without any file extension")
+				raise BIDSException(f"found image filename {image_filename} in dataframe without any file extension")
 			entities, suffix, extension = filename_components
 
 			if not extension.is_nifti():
@@ -625,11 +678,23 @@ class Session:
 					break
 
 			if image is None:
-				raise BIDSException(f"could not find image for filename {image_filename} in _scans.tsv file {scans_tsv_path}")
+				raise BIDSException(f"could not find image for filename {image_filename} in dataframe")
 			
 			image.scan_info = ImageScanInfo(
 				other_fields=info
 			)
+	
+	# read the session's _scans.tsv and fill out scan info for all images
+	def _populate_image_scans_info_from_tsv(self):
+		scans_tsv_path = self._get_full_path() / self._scans_tsv_file_name
+		if not os.path.exists(scans_tsv_path):
+			return
+		
+		scans_tsv_df = _read_tsv_as_df(scans_tsv_path)
+		try:
+			self.populate_image_scans_info_from_df(scans_tsv_df)
+		except BIDSException as e:
+			raise BIDSException(f"could not populate images scans info from TSV file {scans_tsv_path}: {e}")
 
 	def _populate_images_from_folder(self, *, image_scans_info: bool) -> list[str]:
 		unhandled_entries: list[str] = []

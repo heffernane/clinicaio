@@ -123,9 +123,9 @@ class Entities:
 
 		See also
 		--------
-		- :py:func:`Entities.from_str`
-		- :py:func:`Entities.from_str_list`
-		- :py:func:`Entities.from_dict`
+		:py:func:`Entities.from_str`
+		:py:func:`Entities.from_str_list`
+		:py:func:`Entities.from_dict`
 		"""
 
 		if entities is None:
