@@ -8,7 +8,7 @@ import os
 
 from .info import ImageScanInfo, SessionInfo, SubjectInfo
 from .types import SubjectId, SessionId, Suffix, BIDSException, DataType, FileExtension
-from .entities import Entities
+from .entities import Entities, EntitiesLike
 from .dataset_description import BIDSDatasetDescription
 from .image_query import ImageQuery
 from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
@@ -156,14 +156,16 @@ class BIDSDataset :
 		print("UNHANDLED =", unhandled_entries)
 		return dataset
 
-	def add_subject(self, id: SubjectId, info: Optional[SubjectInfo]) -> Subject:
+	def add_subject(self, id: str | SubjectId, info: Optional[SubjectInfo]) -> Subject:
+		id = id if isinstance(id, SubjectId) else SubjectId(id)
+
 		if id in self._subjects:
 			raise BIDSException(f"tried to add subject of ID {id} but it already exists within this dataset")
 
 		subject = Subject(
 			parent_dataset=self,
 			id=id,
-			info=info
+			info=SubjectInfo({}) if info is None else info
 		)
 		self._subjects[id] = subject
 
@@ -193,7 +195,7 @@ class BIDSDataset :
 		_write_rows_to_tsv(
 			tsv_path=self._bids_path / "participants.tsv",
 			first_column_name="participant_id",
-			rows=(subject.info.other_fields | {"participant_id": subject.id} for subject in self.all_subjects() if subject.info is not None),
+			rows=(subject.info.all_fields() | {"participant_id": subject.id} for subject in self.all_subjects()),
 		)
 
 		with self.write_root_file("README", write_binary=False) as f:
@@ -296,20 +298,22 @@ class Subject:
 	id: SubjectId
 	# https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file
 	# from participants.tsv, matched by participant_id, if available (all Optional[Type] = None, if line missing or n/a value)
-	info: Optional[SubjectInfo] = None
+	info: SubjectInfo
 	_sessions: dict[SessionId, Session] = field(default_factory=lambda: {})
 
 	def _get_full_path(self) -> Path:
 		return self.parent_dataset._get_full_path() / f"{self.id}"
 
-	def add_session(self, id: SessionId, info: Optional[SessionInfo]) -> Session:
+	def add_session(self, id: str | SessionId, info: Optional[SessionInfo]) -> Session:
+		id = id if isinstance(id, SessionId) else SessionId(id)
+
 		if id in self._sessions:
 			raise BIDSException(f"tried to add session of ID {id} but it already exists within this subject")
 		
 		session = Session(
 			parent_subject=self,
 			id=id,
-			info=info
+			info=SessionInfo(None, None, {}) if info is None else info
 		)
 		self._sessions[id] = session
 
@@ -350,7 +354,6 @@ class Subject:
 			rows=(
 				session.info.all_fields() | {"session_id": session.id} 
 				for session in self.all_sessions()
-				if session.info is not None
 			),
 		)
 
@@ -442,11 +445,14 @@ class ImagesWriter:
 		self, 
 		data_type: DataType,
 		nifti_extension: FileExtension,
-		entities: Entities,
-		suffix: Optional[Suffix],
+		entities: EntitiesLike,
+		suffix: Optional[Suffix | str],
 		scan_info: Optional[ImageScanInfo],
 	) -> Image:
-		image = self.session._add_image(data_type, nifti_extension, entities, suffix, scan_info)
+		if suffix is not None:
+			suffix = suffix if isinstance(suffix, Suffix) else Suffix(suffix)
+
+		image = self.session._add_image(data_type, nifti_extension, Entities.from_any(entities), suffix, scan_info)
 
 		session_path = self.session._get_full_path()
 
@@ -470,10 +476,9 @@ class ImagesWriter:
 			scans_tsv_path = session_path / self.session._scans_tsv_file_name
 
 			rows = (
-				image.scan_info.other_fields
+				image.scan_info.all_fields()
 				| { "filename": str(image.get_nifti_image_path().relative_to(session_path)) }
 				for image in self.session.all_images()
-				if image.scan_info is not None
 			)
 
 			# We need to write the scans.tsv at the very end of the ImagesWriter "with ...: " scope because all the images
@@ -490,8 +495,8 @@ class Session:
 	parent_subject: Subject = field(repr=False, compare=False)
 
 	id: SessionId
+	info: SessionInfo
 	_images: dict[DataType, list[Image]] = field(default_factory=lambda: {})
-	info: Optional[SessionInfo] = None
 
 	def _get_full_path(self) -> Path:
 		return self.parent_subject._get_full_path() / f"{self.id}"
@@ -547,7 +552,7 @@ class Session:
 			nifti_extension=nifti_extension,
 			entities=entities,
 			suffix=suffix,
-			scan_info=scan_info
+			scan_info=ImageScanInfo({}) if scan_info is None else scan_info 
 		)
 
 		if data_type not in self._images:
@@ -692,8 +697,8 @@ class Image:
 
 	nifti_extension: FileExtension
 	entities: Entities
+	scan_info: ImageScanInfo
 	suffix: Optional[Suffix] = None
-	scan_info: Optional[ImageScanInfo] = None
 
 	###### Loaded lazily and cached ####
 	# sidecar .json

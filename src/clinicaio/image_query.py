@@ -5,7 +5,7 @@ __all__ = ["ImageQuery"]
 from typing import Iterable, Optional
 from dataclasses import dataclass
 
-from .entities import Entities, EntityKey, EntityValue
+from .entities import Entities, EntitiesLike
 from .types import BIDSException, SubjectId, SessionId, DataType, Suffix
 
 @dataclass
@@ -74,7 +74,7 @@ class ImageQuery:
 		# { "trc": "11CPIB", "run": "1"}
 		# or "trc-11CPIB_run-1"
 		# or ["trc-11CPIB", "run-1"]
-		entities: Optional[Entities | dict[str | EntityKey, str | EntityValue] | list[str] | str] = None,
+		entities: EntitiesLike = None,
 		# +/- modality
 		suffix: Optional[str | Suffix] = None,
 	):
@@ -87,23 +87,6 @@ class ImageQuery:
 		
 		self.data_type = data_type
 
-		if entities is None:
-			self.entities = Entities({})
-		elif isinstance(entities, str):
-			self.entities = Entities.from_str(entities)
-		elif isinstance(entities, list):
-			if not all(isinstance(entity, str) for entity in entities):
-				raise BIDSException("found non str entity in list[str] entities parameter for image query")
-			
-			self.entities = Entities.from_str_list(entities)
-		elif isinstance(entities, Entities):
-			self.entities = entities
-		elif isinstance(entities, dict):
-			self.entities = Entities({
-				type_or_type_from_val(key, EntityKey): type_or_type_from_val(value, EntityValue)
-				for key, value in entities.items()
-			})
-		else:
-			raise BIDSException(f"invalid type {type(entities)} for ImageQuery entities {entities}")
+		self.entities = Entities.from_any(entities)
 		
 		self.suffix = None if suffix is None else type_or_type_from_val(suffix, Suffix)

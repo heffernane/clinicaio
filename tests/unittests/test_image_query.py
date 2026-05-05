@@ -170,7 +170,7 @@ def test_entities_str_list():
     assert query.entities == entities
 
 def test_entities_invalid_str_list():
-    with pytest.raises(BIDSException, match=escape("found non str entity in list[str] entities parameter for image query")):
+    with pytest.raises(BIDSException, match=escape("found non str entity in list[str] entities parameter")):
         ImageQuery(entities=["task-rest", 3]) # type: ignore
 
 def test_entities_str_dict():
@@ -210,7 +210,7 @@ def test_entities_mixed_dict():
     assert str(entities) == s
 
 def test_entities_invalid_type():
-    with pytest.raises(BIDSException, match=escape("invalid type <class 'int'> for ImageQuery entities 3")):
+    with pytest.raises(BIDSException, match=escape("invalid input type <class 'int'> for entities 3")):
         ImageQuery(entities=3) # type: ignore
 
 # Suffix query filter
