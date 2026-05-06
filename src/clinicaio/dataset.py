@@ -46,7 +46,7 @@ class BIDSDataset :
 
 	def all_sessions(self) -> Iterable[Session]:
 		for subject in self.all_subjects():
-			yield from (session for session in subject.all_sessions())
+			yield from subject.all_sessions()
 
 	def all_images(self) -> Iterable[Image]:
 		for session in self.all_sessions():
@@ -557,7 +557,7 @@ class Session:
 	def all_images(self) -> Iterable[Image]:
 		"""Returns all the images that are part of this session"""
 		for images in self._images.values():
-			yield from (image for image in images)
+			yield from images
 
 	def images_count(self, data_type: Optional[DataType] = None) -> int:
 		"""
@@ -771,10 +771,6 @@ class Image:
 	entities: Entities
 	scan_info: ImageScanInfo
 	suffix: Optional[Suffix] = None
-
-	###### Loaded lazily and cached ####
-	# sidecar .json
-	#info: ImageInfo
 
 	@cached_property
 	def json_sidecar(self) -> dict[str, Any]:
