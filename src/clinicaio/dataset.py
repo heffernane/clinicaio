@@ -218,7 +218,11 @@ class BIDSDataset :
 		_write_rows_to_tsv(
 			tsv_path=self._bids_path / "participants.tsv",
 			first_column_name="participant_id",
-			rows=(subject.info.all_fields() | {"participant_id": subject.id} for subject in self.all_subjects()),
+			rows=(
+				subject.info.all_fields() | {"participant_id": subject.id}
+				for subject in self.all_subjects()
+				if not subject.info.is_empty()
+			),
 		)
 
 		with self.write_root_file("README", write_binary=False) as f:
@@ -377,6 +381,7 @@ class Subject:
 			rows=(
 				session.info.all_fields() | {"session_id": session.id} 
 				for session in self.all_sessions()
+				if not session.info.is_empty()
 			),
 		)
 	
@@ -522,6 +527,7 @@ class ImagesWriter:
 				image.scan_info.all_fields()
 				| { "filename": str(image.get_nifti_image_path().relative_to(session_path)) }
 				for image in self.session.all_images()
+				if not image.scan_info.is_empty()
 			)
 
 			# We need to write the scans.tsv at the very end of the ImagesWriter "with ...: " scope because all the images
