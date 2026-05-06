@@ -20,7 +20,7 @@ class BIDSDatasetDescription:
 
 	_JSON_FILENAME = "dataset_description.json"
 
-	def __init__(self, *, name: str, version: str, dataset_type: BIDSDatasetType) -> None:
+	def __init__(self, dataset_type: BIDSDatasetType, *, name: str, version: str) -> None:
 		self.name = name
 		try:
 			self.version = Version(version)

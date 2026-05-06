@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Iterable, Any
+from typing import Callable, Optional, Iterable, Any
 from dataclasses import dataclass, field
 from pathlib import Path
 from functools import cached_property
@@ -109,7 +109,15 @@ class BIDSDataset :
 
 
 	@classmethod
-	def populate_from_dir(cls, bids_dir: Path, *, subjects_info: bool, sessions_info: bool, image_scans_info: bool) -> BIDSDataset:
+	def populate_from_dir(
+		cls,
+		bids_dir: Path,
+		*,
+		subjects_info: bool,
+		sessions_info: bool,
+		image_scans_info: bool,
+		_report_unhandled_entries: Callable[[list[str]], None] = lambda entries: None
+	) -> BIDSDataset:
 		"""
 		Read a BIDS dataset from the given BIDS directory.
 
@@ -176,7 +184,7 @@ class BIDSDataset :
 			dataset._populate_subjects_info_from_tsv()
 
 		unhandled_entries = [str(Path(entry).relative_to(bids_dir)) for entry in unhandled_entries]
-		print("UNHANDLED =", unhandled_entries)
+		_report_unhandled_entries(unhandled_entries)
 		return dataset
 
 	def add_subject(self, id: str | SubjectId, info: Optional[SubjectInfo]) -> Subject:
