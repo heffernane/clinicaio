@@ -120,6 +120,29 @@ def test_read_participants_tsv_invalid_id(fakefs: FakeFilesystem):
     with pytest.raises(BIDSException, match=escape(msg)):
         BIDSDataset.populate_from_dir(bids_path, subjects_info=True, sessions_info=False, image_scans_info=False)
 
+def test_read_participants_tsv_na_none_participant_id(fakefs: FakeFilesystem):
+    _setup_dataset_description(fakefs)
+
+    tsv_path = bids_path / "participants.tsv"
+    fakefs.create_file(
+        tsv_path,
+        contents=_make_tsv([
+            ["participant_id", "a", "b", "c"],
+            ["n/a", "abc", "bce", "cef"],
+            ["n/a", "n/a", "n/a", "n/a"],
+            ["sub-001", "abc", "bce", "cef"],
+        ])
+    )
+    fakefs.create_dir(bids_path / "sub-001")
+
+    dataset = BIDSDataset.populate_from_dir(bids_path, subjects_info=True, sessions_info=False, image_scans_info=False)
+    assert dataset.subjects_count() == 1
+    subject = list(dataset.all_subjects())[0]
+    assert subject.id == SubjectId("sub-001")
+    assert subject.parent_dataset is dataset
+    assert subject.sessions_count() == 0
+    assert subject.info == SubjectInfo({"a": "abc", "b": "bce", "c": "cef"})
+
 def test_read_dataset_subject_structure(fakefs: FakeFilesystem):
     desc = _setup_dataset_description(fakefs)
     fakefs.create_file(bids_path / "README")
