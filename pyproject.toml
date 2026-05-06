@@ -1,12 +1,15 @@
-[tool.poetry]
+[project]
 name = "clinicaio"
 version = "0.2.0"
 description = "A Python library for input/output management of all Clinica projects."
 license = "MIT"
-authors = ["ARAMIS Lab"]
-maintainers = ["Clinica developers <clinica.run@gmail.com>"]
+authors = [
+    { name = "ARAMIS Lab" }
+]
+maintainers = [
+    { name = "Clinica developers", email = "clinica.run@gmail.com>"},
+]
 readme = "README.md"
-repository = "https://github.com/aramis-lab/clinicaio.git"
 packages = [{include = "clinicaio", from = "src"}]
 keywords = [
     "bids",
@@ -24,15 +27,18 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Topic :: Scientific/Engineering :: Image Processing"
 ]
-
-[tool.poetry.dependencies]
 # ClinicaIO adopts the same Python version policy as Clinica itself, so the dependencies are
 # also impacted by it.
 # See https://scientific-python.org/specs/spec-0000/
-python = ">=3.10,<3.14"
-pandas = ">= 2.3.0,<3.0"
-#nbsphinx = "^0.9.8"
-packaging = "^26.2"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "pandas (>= 2.3.0,<3.0)",
+    #"nbsphinx",
+    "packaging",
+]
+
+[project.urls]
+sources = "https://github.com/aramis-lab/clinicaio.git"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
