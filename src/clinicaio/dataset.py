@@ -93,7 +93,7 @@ class BIDSDataset :
 				#raise BIDSException(f"could not find subject of ID {subject_id} referenced by TSV file {participants_tsv_path}")
 
 			subject.info = SubjectInfo(
-				other_fields=info
+				other_fields={} if all(v is None for v in info.values()) else info
 			)
 
 	def _populate_subjects_info_from_tsv(self):
@@ -418,10 +418,11 @@ class Subject:
 				continue
 				#raise BIDSException(f"could not find session of ID {session_id} referenced by TSV file {sessions_tsv_path}")
 
+			has_any_field = all(v is None for v in info)
 			session.info = SessionInfo(
 				acquisition_time=info.pop("acq_time", None),
 				pathology=info.pop("pathology", None),
-				other_fields=info
+				other_fields=info if has_any_field else {}
 			)
 
 	def _populate_sessions_info_from_tsv(self):
@@ -687,7 +688,7 @@ class Session:
 				raise BIDSException(f"could not find image for filename {image_filename} in dataframe")
 			
 			image.scan_info = ImageScanInfo(
-				other_fields=info
+				other_fields={} if all(v is None for v in info) else info
 			)
 	
 	# read the session's _scans.tsv and fill out scan info for all images
