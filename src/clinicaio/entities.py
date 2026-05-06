@@ -175,3 +175,8 @@ class Entities:
 		return f"Entities({{{dict_content}}})"
 	
 EntitiesLike: TypeAlias = Optional[Entities | dict[str | EntityKey, str | EntityValue] | list[str] | str]
+"""
+- ``{ "trc": "11CPIB", "run": "1"}``
+- ``"trc-11CPIB_run-1"``
+- ``["trc-11CPIB", "run-1"]``
+"""
