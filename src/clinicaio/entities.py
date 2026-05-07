@@ -6,175 +6,191 @@ from typing import Optional, TypeAlias
 
 from .types import BIDSException, Label
 
+
 # not for sub- and ses- entities
 # TODO: enum?
 class EntityKey(Label):
-	def __hash__(self):
-		return self.value.__hash__()
+    def __hash__(self):
+        return self.value.__hash__()
+
 
 @dataclass
 class EntityValue:
-	#value: Index | Label
-	_value: Label
+    # value: Index | Label
+    _value: Label
 
-	def __init__(self, value: str):
-		self._value = Label(value)
+    def __init__(self, value: str):
+        self._value = Label(value)
 
-	def __str__(self):
-		return self._value.value.__str__()
+    def __str__(self):
+        return self._value.value.__str__()
+
 
 @dataclass
 class Entities:
-	_entities: dict[EntityKey, EntityValue]
+    _entities: dict[EntityKey, EntityValue]
 
-	def __init__(self, entities: dict[EntityKey, EntityValue]):
-		self._entities = entities
+    def __init__(self, entities: dict[EntityKey, EntityValue]):
+        self._entities = entities
 
-	@classmethod
-	def from_dict(cls, entities: dict[str | EntityKey, str | EntityValue]) -> Entities:
-		"""
-		Creates entities from its dict form.
-		
-		Parameters
-		----------
-		entities : dict[str | EntityKey, str | EntityValue]]
-			the entities made of key/value pairs. Either one can be the fully validated class or a string,
-			in which case they will be validated by this function.
-		
-		Raises
-		------
-		BIDSException
-			if a key or value was invalid.
+    @classmethod
+    def from_dict(cls, entities: dict[str | EntityKey, str | EntityValue]) -> Entities:
+        """
+        Creates entities from its dict form.
 
-		Returns
-		-------
-		The created entities
-		"""
-		type_or_type_from_val = lambda v, typ: v if isinstance(v, typ) else typ(v)
+        Parameters
+        ----------
+        entities : dict[str | EntityKey, str | EntityValue]]
+                the entities made of key/value pairs. Either one can be the fully validated class or a string,
+                in which case they will be validated by this function.
 
-		return Entities({
-			type_or_type_from_val(key, EntityKey): type_or_type_from_val(value, EntityValue)
-			for key, value in entities.items()
-		})
+        Raises
+        ------
+        BIDSException
+                if a key or value was invalid.
 
-	@classmethod
-	def from_str_list(cls, entities: list[str]) -> Entities:
-		"""
-		Creates entities from its list form.
-		
-		Parameters
-		----------
-		entities : list[str]
-			List of the form ``["<key1>-<value1>", ....., "<keyN>-<valueN>"]``
-		
-		Raises
-		------
-		BIDSException
-			if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
+        Returns
+        -------
+        The created entities
+        """
+        type_or_type_from_val = lambda v, typ: v if isinstance(v, typ) else typ(v)
 
-		Returns
-		-------
-		The created entities
-		"""
+        return Entities(
+            {
+                type_or_type_from_val(key, EntityKey): type_or_type_from_val(
+                    value, EntityValue
+                )
+                for key, value in entities.items()
+            }
+        )
 
-		if not all(isinstance(entity, str) for entity in entities):
-			raise BIDSException("found non str entity in list[str] entities parameter")
+    @classmethod
+    def from_str_list(cls, entities: list[str]) -> Entities:
+        """
+        Creates entities from its list form.
 
-		try:
-			values = {
-				EntityKey(key): EntityValue(value)
-				for [key, value] in (entity.split("-", maxsplit=1) for entity in entities)
-			}	
-		except ValueError:
-			raise BIDSException(f"found entities list {entities} that had an element without a - separator")
+        Parameters
+        ----------
+        entities : list[str]
+                List of the form ``["<key1>-<value1>", ....., "<keyN>-<valueN>"]``
 
-		return Entities(values)
+        Raises
+        ------
+        BIDSException
+                if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
 
-	@classmethod
-	def from_str(cls, entities: str) -> Entities:
-		"""
-		Creates entities from its string form.
-		
-		Parameters
-		----------
-		entities : str
-			String of the form ``"<key1>-<value1>_..._<keyN>-<valueN>"``
-		
-		Raises
-		------
-		BIDSException
-			if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
+        Returns
+        -------
+        The created entities
+        """
 
-		Returns
-		-------
-		The created entities
-		"""
-		return Entities.from_str_list(entities.split("_"))
-	
-	@classmethod
-	def from_any(cls, entities: EntitiesLike) -> Entities:
-		"""
-		Convenience constructor.
+        if not all(isinstance(entity, str) for entity in entities):
+            raise BIDSException("found non str entity in list[str] entities parameter")
 
-		Raises
-		------
-		BIDSException
-			if the passed entities argument is not of any allowed type, or if the entities were invalid.
+        try:
+            values = {
+                EntityKey(key): EntityValue(value)
+                for [key, value] in (
+                    entity.split("-", maxsplit=1) for entity in entities
+                )
+            }
+        except ValueError:
+            raise BIDSException(
+                f"found entities list {entities} that had an element without a - separator"
+            )
 
-		See also
-		--------
-		:py:func:`Entities.from_str`
-		:py:func:`Entities.from_str_list`
-		:py:func:`Entities.from_dict`
-		"""
+        return Entities(values)
 
-		if entities is None:
-			return Entities({})
-		elif isinstance(entities, str):
-			return Entities.from_str(entities)
-		elif isinstance(entities, list):
-			return Entities.from_str_list(entities)
-		elif isinstance(entities, Entities):
-			return entities
-		elif isinstance(entities, dict):
-			return Entities.from_dict(entities)
-		else:
-			raise BIDSException(f"invalid input type {type(entities)} for entities {entities}")
+    @classmethod
+    def from_str(cls, entities: str) -> Entities:
+        """
+        Creates entities from its string form.
 
-	def __str__(self):
-		"""Returns the string form of the entity, i.e. ``"<key1>-<value1>_..._<keyN>-<valueN>"`` """
-		return "_".join(f"{key}-{value}" for key, value in self)
-	
-	def contains_entity(self, key: EntityKey, value: EntityValue) -> bool:
-		"""Returns whether the entities contain the given entity given by key/value pair"""
-		actual_value = self._entities.get(key)
-		return (actual_value is not None) and (actual_value == value)
-	
-	def contains_all(self, queried_entities: Entities) -> bool:
-		"""
-		Returns whether the queried entities are all contained in the entities.
-		There may be more entities available than there are queried ones.
-		"""
-		for queried_key, queried_value in queried_entities:
-			if not self.contains_entity(queried_key, queried_value):
-				return False
-			
-		return True
+        Parameters
+        ----------
+        entities : str
+                String of the form ``"<key1>-<value1>_..._<keyN>-<valueN>"``
 
-	def get_value(self, key: EntityKey) -> Optional[EntityValue]:
-		return self._entities.get(key)
+        Raises
+        ------
+        BIDSException
+                if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
 
-	def __iter__(self) -> Iterator[tuple[EntityKey, EntityValue]]:
-		return iter(self._entities.items())
+        Returns
+        -------
+        The created entities
+        """
+        return Entities.from_str_list(entities.split("_"))
 
-	def __len__(self) -> int:
-		return len(self._entities)
-	
-	def __repr__(self) -> str:
-		dict_content = ", ".join(f"\"{key}\": \"{value}\"" for key, value in self)
-		return f"Entities({{{dict_content}}})"
-	
-EntitiesLike: TypeAlias = Optional[Entities | dict[str | EntityKey, str | EntityValue] | list[str] | str]
+    @classmethod
+    def from_any(cls, entities: EntitiesLike) -> Entities:
+        """
+        Convenience constructor.
+
+        Raises
+        ------
+        BIDSException
+                if the passed entities argument is not of any allowed type, or if the entities were invalid.
+
+        See also
+        --------
+        :py:func:`Entities.from_str`
+        :py:func:`Entities.from_str_list`
+        :py:func:`Entities.from_dict`
+        """
+
+        if entities is None:
+            return Entities({})
+        elif isinstance(entities, str):
+            return Entities.from_str(entities)
+        elif isinstance(entities, list):
+            return Entities.from_str_list(entities)
+        elif isinstance(entities, Entities):
+            return entities
+        elif isinstance(entities, dict):
+            return Entities.from_dict(entities)
+        else:
+            raise BIDSException(
+                f"invalid input type {type(entities)} for entities {entities}"
+            )
+
+    def __str__(self):
+        """Returns the string form of the entity, i.e. ``"<key1>-<value1>_..._<keyN>-<valueN>"``"""
+        return "_".join(f"{key}-{value}" for key, value in self)
+
+    def contains_entity(self, key: EntityKey, value: EntityValue) -> bool:
+        """Returns whether the entities contain the given entity given by key/value pair"""
+        actual_value = self._entities.get(key)
+        return (actual_value is not None) and (actual_value == value)
+
+    def contains_all(self, queried_entities: Entities) -> bool:
+        """
+        Returns whether the queried entities are all contained in the entities.
+        There may be more entities available than there are queried ones.
+        """
+        for queried_key, queried_value in queried_entities:
+            if not self.contains_entity(queried_key, queried_value):
+                return False
+
+        return True
+
+    def get_value(self, key: EntityKey) -> Optional[EntityValue]:
+        return self._entities.get(key)
+
+    def __iter__(self) -> Iterator[tuple[EntityKey, EntityValue]]:
+        return iter(self._entities.items())
+
+    def __len__(self) -> int:
+        return len(self._entities)
+
+    def __repr__(self) -> str:
+        dict_content = ", ".join(f'"{key}": "{value}"' for key, value in self)
+        return f"Entities({{{dict_content}}})"
+
+
+EntitiesLike: TypeAlias = Optional[
+    Entities | dict[str | EntityKey, str | EntityValue] | list[str] | str
+]
 """
 - ``{ "trc": "11CPIB", "run": "1"}``
 - ``"trc-11CPIB_run-1"``

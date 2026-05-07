@@ -10,6 +10,7 @@ from clinicaio.types import BIDSException, DataType, SessionId, SubjectId, Suffi
 # its arguments, in a Python fashion. These tests ensure that each supported
 # input types are well supported.
 
+
 # Subjects query filter
 def test_subject_str_to_id():
     query = ImageQuery(subjects=["sub-1"])
@@ -19,6 +20,7 @@ def test_subject_str_to_id():
     assert type(list(query.subjects)[0]) == SubjectId
     assert type(list(query.subjects)[0]) != str
 
+
 def test_direct_subject_id_class():
     query = ImageQuery(subjects=[SubjectId("sub-1")])
     assert type(query.subjects) == set
@@ -27,8 +29,11 @@ def test_direct_subject_id_class():
     assert type(list(query.subjects)[0]) == SubjectId
     assert type(list(query.subjects)[0]) != str
 
+
 def test_mixed_subject_str_and_id_class():
-    query = ImageQuery(subjects=[SubjectId("sub-1"), "sub-2", SubjectId("sub-3"), "sub-4", "sub-5"])
+    query = ImageQuery(
+        subjects=[SubjectId("sub-1"), "sub-2", SubjectId("sub-3"), "sub-4", "sub-5"]
+    )
     assert type(query.subjects) == set
     assert type(query.subjects) != list
     assert len(query.subjects) == 5
@@ -39,11 +44,20 @@ def test_mixed_subject_str_and_id_class():
         i += 1
     assert i == len(query.subjects)
 
-    assert sorted(map(lambda id: f"{id}", query.subjects)) == ["sub-1", "sub-2", "sub-3", "sub-4", "sub-5"]
+    assert sorted(map(lambda id: f"{id}", query.subjects)) == [
+        "sub-1",
+        "sub-2",
+        "sub-3",
+        "sub-4",
+        "sub-5",
+    ]
+
 
 def test_mixed_subject_str_and_id_class_in_set():
     # Note the use of a set here instead of a list
-    query = ImageQuery(subjects={SubjectId("sub-1"), "sub-2", SubjectId("sub-3"), "sub-4", "sub-5"})
+    query = ImageQuery(
+        subjects={SubjectId("sub-1"), "sub-2", SubjectId("sub-3"), "sub-4", "sub-5"}
+    )
     assert type(query.subjects) == set
     assert type(query.subjects) != list
     assert len(query.subjects) == 5
@@ -54,10 +68,19 @@ def test_mixed_subject_str_and_id_class_in_set():
         i += 1
     assert i == len(query.subjects)
 
-    assert sorted(map(lambda id: f"{id}", query.subjects)) == ["sub-1", "sub-2", "sub-3", "sub-4", "sub-5"]
+    assert sorted(map(lambda id: f"{id}", query.subjects)) == [
+        "sub-1",
+        "sub-2",
+        "sub-3",
+        "sub-4",
+        "sub-5",
+    ]
+
 
 def test_duplicated_subject_ids():
-    query = ImageQuery(subjects=[SubjectId("sub-1"), "sub-2", SubjectId("sub-2"), "sub-4", "sub-2"])
+    query = ImageQuery(
+        subjects=[SubjectId("sub-1"), "sub-2", SubjectId("sub-2"), "sub-4", "sub-2"]
+    )
     assert type(query.subjects) == set
     assert type(query.subjects) != list
     assert len(query.subjects) == 3
@@ -68,7 +91,11 @@ def test_duplicated_subject_ids():
         i += 1
     assert i == len(query.subjects)
 
-    assert sorted(map(lambda id: f"{id}", query.subjects)) == ["sub-1", "sub-2", "sub-4"]
+    assert sorted(map(lambda id: f"{id}", query.subjects)) == [
+        "sub-1",
+        "sub-2",
+        "sub-4",
+    ]
 
 
 # Sessions query filter
@@ -80,6 +107,7 @@ def test_session_str_to_id():
     assert type(list(query.sessions)[0]) == SessionId
     assert type(list(query.sessions)[0]) != str
 
+
 def test_direct_session_id_class():
     query = ImageQuery(sessions=[SessionId("ses-1")])
     assert type(query.sessions) == set
@@ -88,8 +116,11 @@ def test_direct_session_id_class():
     assert type(list(query.sessions)[0]) == SessionId
     assert type(list(query.sessions)[0]) != str
 
+
 def test_mixed_session_str_and_id_class():
-    query = ImageQuery(sessions=[SessionId("ses-1"), "ses-2", SessionId("ses-3"), "ses-4", "ses-5"])
+    query = ImageQuery(
+        sessions=[SessionId("ses-1"), "ses-2", SessionId("ses-3"), "ses-4", "ses-5"]
+    )
     assert type(query.sessions) == set
     assert type(query.sessions) != list
     assert len(query.sessions) == 5
@@ -100,11 +131,20 @@ def test_mixed_session_str_and_id_class():
         i += 1
     assert i == len(query.sessions)
 
-    assert sorted(map(lambda id: f"{id}", query.sessions)) == ["ses-1", "ses-2", "ses-3", "ses-4", "ses-5"]
+    assert sorted(map(lambda id: f"{id}", query.sessions)) == [
+        "ses-1",
+        "ses-2",
+        "ses-3",
+        "ses-4",
+        "ses-5",
+    ]
+
 
 def test_mixed_session_str_and_id_class_in_set():
     # Note the use of a set here instead of a list
-    query = ImageQuery(sessions={SessionId("ses-1"), "ses-2", SessionId("ses-3"), "ses-4", "ses-5"})
+    query = ImageQuery(
+        sessions={SessionId("ses-1"), "ses-2", SessionId("ses-3"), "ses-4", "ses-5"}
+    )
     assert type(query.sessions) == set
     assert type(query.sessions) != list
     assert len(query.sessions) == 5
@@ -115,10 +155,19 @@ def test_mixed_session_str_and_id_class_in_set():
         i += 1
     assert i == len(query.sessions)
 
-    assert sorted(map(lambda id: f"{id}", query.sessions)) == ["ses-1", "ses-2", "ses-3", "ses-4", "ses-5"]
+    assert sorted(map(lambda id: f"{id}", query.sessions)) == [
+        "ses-1",
+        "ses-2",
+        "ses-3",
+        "ses-4",
+        "ses-5",
+    ]
+
 
 def test_duplicated_session_ids():
-    query = ImageQuery(sessions=[SessionId("ses-1"), "ses-2", SessionId("ses-2"), "ses-4", "ses-2"])
+    query = ImageQuery(
+        sessions=[SessionId("ses-1"), "ses-2", SessionId("ses-2"), "ses-4", "ses-2"]
+    )
     assert type(query.sessions) == set
     assert type(query.sessions) != list
     assert len(query.sessions) == 3
@@ -129,7 +178,11 @@ def test_duplicated_session_ids():
         i += 1
     assert i == len(query.sessions)
 
-    assert sorted(map(lambda id: f"{id}", query.sessions)) == ["ses-1", "ses-2", "ses-4"]
+    assert sorted(map(lambda id: f"{id}", query.sessions)) == [
+        "ses-1",
+        "ses-2",
+        "ses-4",
+    ]
 
 
 # Data type query filter
@@ -138,8 +191,10 @@ def test_data_type():
     assert ImageQuery(data_type=DataType.PET).data_type == DataType.PET
     assert ImageQuery(data_type=DataType("pet")).data_type == DataType.PET
 
-    with pytest.raises(BIDSException, match=escape("invalid type <class 'str'> for data_type argument")):
-        ImageQuery(data_type="pet") # type: ignore
+    with pytest.raises(
+        BIDSException, match=escape("invalid type <class 'str'> for data_type argument")
+    ):
+        ImageQuery(data_type="pet")  # type: ignore
 
 
 # Entities query filter
@@ -151,6 +206,7 @@ def test_entities_class():
     assert query.entities.contains_all(entities)
     assert query.entities == entities
 
+
 def test_entities_str():
     s = "trc-18FFDG_task-rest"
     query = ImageQuery(entities=s)
@@ -159,6 +215,7 @@ def test_entities_str():
     assert len(query.entities) == len(entities)
     assert query.entities.contains_all(entities)
     assert query.entities == entities
+
 
 def test_entities_str_list():
     l = ["trc-18FFDG", "task-rest"]
@@ -169,9 +226,14 @@ def test_entities_str_list():
     assert query.entities.contains_all(entities)
     assert query.entities == entities
 
+
 def test_entities_invalid_str_list():
-    with pytest.raises(BIDSException, match=escape("found non str entity in list[str] entities parameter")):
-        ImageQuery(entities=["task-rest", 3]) # type: ignore
+    with pytest.raises(
+        BIDSException,
+        match=escape("found non str entity in list[str] entities parameter"),
+    ):
+        ImageQuery(entities=["task-rest", 3])  # type: ignore
+
 
 def test_entities_str_dict():
     entities = Entities.from_str("aaa-1_bbb-2_ccc-3")
@@ -181,27 +243,33 @@ def test_entities_str_dict():
     assert query.entities.contains_all(entities)
     assert query.entities == entities
 
+
 def test_entities_classes_dict():
     entities = Entities.from_str("aaa-1_bbb-2_ccc-3")
-    query = ImageQuery(entities={
-        EntityKey("aaa"): EntityValue("1"), 
-        EntityKey("bbb"): EntityValue("2"), 
-        EntityKey("ccc"): EntityValue("3"),
-    })
+    query = ImageQuery(
+        entities={
+            EntityKey("aaa"): EntityValue("1"),
+            EntityKey("bbb"): EntityValue("2"),
+            EntityKey("ccc"): EntityValue("3"),
+        }
+    )
     assert len(entities) == 3
     assert len(query.entities) == len(entities)
     assert query.entities.contains_all(entities)
     assert query.entities == entities
 
+
 def test_entities_mixed_dict():
     s = "aaa-1_bbb-2_ccc-3_ddd-4"
     entities = Entities.from_str(s)
-    query = ImageQuery(entities={
-        "aaa": EntityValue("1"), 
-        EntityKey("bbb"): "2", 
-        EntityKey("ccc"): EntityValue("3"),
-        "ddd": "4",
-    })
+    query = ImageQuery(
+        entities={
+            "aaa": EntityValue("1"),
+            EntityKey("bbb"): "2",
+            EntityKey("ccc"): EntityValue("3"),
+            "ddd": "4",
+        }
+    )
     assert len(entities) == 4
     assert len(query.entities) == len(entities)
     assert query.entities.contains_all(entities)
@@ -209,13 +277,18 @@ def test_entities_mixed_dict():
 
     assert str(entities) == s
 
+
 def test_entities_invalid_type():
-    with pytest.raises(BIDSException, match=escape("invalid input type <class 'int'> for entities 3")):
-        ImageQuery(entities=3) # type: ignore
+    with pytest.raises(
+        BIDSException, match=escape("invalid input type <class 'int'> for entities 3")
+    ):
+        ImageQuery(entities=3)  # type: ignore
+
 
 # Suffix query filter
 def test_suffix_none():
     assert ImageQuery(suffix=None).suffix is None
+
 
 def test_suffix_class():
     s = "sfx"
@@ -223,6 +296,7 @@ def test_suffix_class():
     query = ImageQuery(suffix=suffix)
     assert query.suffix == suffix
     assert str(query.suffix) == s
+
 
 def test_suffix_str():
     s = "sfx"
