@@ -1,5 +1,6 @@
 /notebooks/_env.py
 /.vscode
+.ruff_cache
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

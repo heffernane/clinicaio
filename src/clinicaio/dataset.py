@@ -83,7 +83,7 @@ class BIDSDataset:
         infos: list[dict[str, Any]] = participants_tsv_df.to_dict(orient="records")  # type: ignore
         for info in infos:
             subject_id = info.pop("participant_id", None)
-            if subject_id == None:
+            if subject_id is None:
                 continue
             try:
                 subject_id = SubjectId(str(subject_id))
@@ -461,7 +461,7 @@ class Subject:
         infos: list[dict[str, Any]] = sessions_tsv_df.to_dict(orient="records")  # type: ignore
         for info in infos:
             session_id = info.pop("session_id", None)
-            if session_id == None:
+            if session_id is None:
                 continue
             try:
                 session_id = SessionId(str(session_id))
@@ -730,7 +730,7 @@ class Session:
         infos: list[dict[str, Any]] = scans_tsv_df.to_dict(orient="records")  # type: ignore
         for info in infos:
             image_filename = info.pop("filename", None)
-            if image_filename == None:
+            if image_filename is None:
                 continue
             try:
                 data_type, image_basename = str(image_filename).split(
