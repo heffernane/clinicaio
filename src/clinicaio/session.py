@@ -222,6 +222,8 @@ class Session:
                     f"Found data type entry {data_type} that was not a directory"
                 )
 
+            maybe_duplicated_images: list[Image] = []
+
             for child_image in os.scandir(child.path):
                 sub_ses_prefix = f"{self.parent_subject.id}_{self.id}_"
                 if not child_image.name.startswith(sub_ses_prefix):
@@ -256,13 +258,44 @@ class Session:
                 if not extension.is_nifti():
                     continue
 
-                self._add_image(
+                image = self._add_image(
                     data_type=data_type,
                     nifti_extension=extension,
                     entities=entities,
                     suffix=suffix,
                     scan_info=None,
                 )
+                # https://bids-specification.readthedocs.io/en/stable/common-principles.html#uniqueness-of-data-files
+                # "If multiple extensions are permissible (for example, .nii and .nii.gz), there MUST only be one such
+                # file with the same entities, datatype and suffix"
+                #
+                # Since .nii are much rarer than .nii.gz, let's trigger this check only when we encounter the former
+                if image.nifti_extension == FileExtension.NII:
+                    maybe_duplicated_images.append(image)
+
+            for dup_image in maybe_duplicated_images:
+
+                def is_duplicated_image(img: Image) -> bool:
+                    # At this point we already know they have the same subject/session/datatype, and they have different file
+                    # extensions if the
+                    return (
+                        (img is not dup_image)
+                        and (img.suffix == dup_image.suffix)
+                        and (img.entities == dup_image.entities)
+                    )
+
+                other_same_images = list(
+                    filter(is_duplicated_image, self._images[data_type])
+                )
+
+                if len(other_same_images) > 0:
+                    paths = [
+                        str(image.get_nifti_image_path()) for image in other_same_images
+                    ]
+
+                    raise BIDSException(
+                        f"found image {str(dup_image.get_nifti_image_path())} that only had file extension as difference from {paths} (i.e. .nii vs .nii.gz with same subject+session+datatype+entities+suffix)"
+                    )
 
         if image_scans_info:
             self._populate_image_scans_info_from_tsv()
