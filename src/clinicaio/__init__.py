@@ -51,3 +51,5 @@ on the dataset. The images themselves need to be added using :py:meth:`~clinicai
 get its NIFTI path (and companion files paths if applicable) and actually write those files yourself, otherwise
 the BIDS will not be valid.
 """
+
+

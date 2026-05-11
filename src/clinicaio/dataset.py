@@ -826,10 +826,10 @@ class Session:
                 sub_ses_prefix = f"{self.parent_subject.id}_{self.id}_"
                 if not child_image.name.startswith(sub_ses_prefix):
                     raise BIDSException(
-                        f"expected {data_type}/{child_image.name} \
-						filename to start with {sub_ses_prefix} due to its placement in the BIDS directory hierarchy"
+                        f"expected {data_type}/{child_image.name} "\
+						f"filename to start with {sub_ses_prefix} due to its placement in the BIDS directory hierarchy"
                     )
-
+                
                 after_sub_ses = child_image.name.removeprefix(sub_ses_prefix)
 
                 try:
@@ -943,7 +943,7 @@ class Image:
             raise BIDSException(
                 f"found invalid entities for image filename {filename_after_sub_ses}: {e}"
             )
-
+    
         return (entities, suffix, extension)
 
     def _get_image_base_full_path(

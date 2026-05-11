@@ -70,7 +70,6 @@ class ImageQuery:
         *,
         subjects: Optional[Iterable[str | SubjectId]] = None,
         sessions: Optional[Iterable[str | SessionId]] = None,
-        # FIXME: allow multiple data types at once?
         data_type: Optional[DataType] = None,
         # { "trc": "11CPIB", "run": "1"}
         # or "trc-11CPIB_run-1"
