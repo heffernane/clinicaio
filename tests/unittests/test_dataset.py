@@ -8,7 +8,7 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 
 from clinicaio.dataset import BIDSDataset
 from clinicaio.dataset_description import BIDSDatasetDescription, BIDSDatasetType
-from clinicaio.info import SubjectInfo
+from clinicaio.subject import SubjectInfo
 from clinicaio.types import BIDSException, SubjectId
 
 # NOTE: Each test has its own pyfakefs/it's reset after the individual test run ends. Pytest runs tests sequentially.

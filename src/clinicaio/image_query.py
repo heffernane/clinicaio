@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-__all__ = ["ImageQuery"]
-
 from dataclasses import dataclass
 from typing import Iterable, Optional
 

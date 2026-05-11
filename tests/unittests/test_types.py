@@ -47,7 +47,7 @@ def test_ids_prefix_with_empty_label():
     [
         (SubjectId, "sub-123"),
         (SessionId, "ses-123"),
-    ]
+    ],
 )
 def test_ids_to_str(id_class: type, value: str):
     assert str(id_class(value)) == value
@@ -75,7 +75,7 @@ def test_ids_non_alnum_chars():
     [
         (SubjectId, "sub-"),
         (SessionId, "ses-"),
-    ]
+    ],
 )
 def test_ids_hash_eq(id_class: type, prefix: str):
     id1 = id_class(f"{prefix}01")
@@ -101,7 +101,7 @@ def test_ids_hash_eq(id_class: type, prefix: str):
         (BIDSDatasetType.RAW, "raw"),
         (DataType.PHENOTYPE, "phenotype"),
         (FileExtension.NII_GZ, "nii.gz"),
-    ]
+    ],
 )
 def test_enum_to_str(enum_value: Any, string_value: str):
     # We test this notably because while StrEnum has the correct behavior
@@ -113,12 +113,7 @@ def test_enum_to_str(enum_value: Any, string_value: str):
 
 
 @pytest.mark.parametrize(
-    ["wrapper_type", "string"],
-    [
-        (Suffix, "sfx"),
-        (Version, "1.10.0"),
-        (Label, "txt")
-    ]
+    ["wrapper_type", "string"], [(Suffix, "sfx"), (Version, "1.10.0"), (Label, "txt")]
 )
 def test_wrappers_to_str(wrapper_type: type, string: str):
     assert str(wrapper_type(string)) == string

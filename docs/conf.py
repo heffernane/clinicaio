@@ -39,7 +39,10 @@ autoapi_options = [
     "show-inheritance",
     "show-module-summary",
     "special-members",
-    "imported-members",
+    # Otherwise we get duplicated documentation between the package documentation ("clinicaio") and
+    # the module-level documentation (e.g. clinicaio.image). Also it creates warnings about
+    # multiple available target reference for e.g. "Image".
+    # "imported-members",
 ]
 autoapi_python_class_content = "both"
 

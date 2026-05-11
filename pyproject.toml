@@ -67,7 +67,7 @@ select = [
     "I001",
     # "PTH",
 ]
-ignore = ["E203", "E501"]
+ignore = ["E203", "E501", "E721"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["clinicaio"]

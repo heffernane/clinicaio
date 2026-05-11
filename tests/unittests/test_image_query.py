@@ -218,9 +218,9 @@ def test_entities_str():
 
 
 def test_entities_str_list():
-    l = ["trc-18FFDG", "task-rest"]
-    query = ImageQuery(entities=l)
-    entities = Entities.from_str_list(l)
+    entities_list = ["trc-18FFDG", "task-rest"]
+    query = ImageQuery(entities=entities_list)
+    entities = Entities.from_str_list(entities_list)
     assert len(entities) == 2
     assert len(query.entities) == len(entities)
     assert query.entities.contains_all(entities)
