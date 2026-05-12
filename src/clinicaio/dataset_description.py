@@ -79,6 +79,10 @@ class BIDSDatasetDescription:
 
         try:
             dataset_type = json_data["DatasetType"]
+            try:
+                dataset_type = BIDSDatasetType(dataset_type)
+            except ValueError:
+                raise BIDSException(f"invalid dataset type {dataset_type}")
         except KeyError:
             # DatasetType is recommended with "raw" as default
             dataset_type = BIDSDatasetType.RAW
@@ -87,13 +91,14 @@ class BIDSDatasetDescription:
             raise BIDSException(
                 f"invalid type for Name field in BIDS JSON description file: {name}"
             )
-
-        try:
-            return BIDSDatasetDescription(
-                name=name, version=version, dataset_type=BIDSDatasetType(dataset_type)
+        if not isinstance(version, str):
+            raise BIDSException(
+                f"invalid type for BIDSVersion field in BIDS JSON description file: {version}"
             )
-        except ValueError:
-            raise BIDSException(f"invalid dataset type {dataset_type}")
+
+        return BIDSDatasetDescription(
+            name=name, version=version, dataset_type=dataset_type
+        )
 
 
 class BIDSDatasetType(str, Enum):

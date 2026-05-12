@@ -47,3 +47,11 @@ def test_desc_missing_fields():
 def test_default_dataset_type():
     desc = new_desc('{"Name": "TEST", "BIDSVersion": "1.10.0"}')
     assert desc.dataset_type == BIDSDatasetType.RAW
+
+def test_non_str_name():
+    with pytest.raises(BIDSException, match=escape("invalid type for Name field in BIDS JSON description file: 3")):
+        new_desc('{"Name": 3, "BIDSVersion": "1.10.0", "DatasetType": "raw"}')
+
+def test_non_str_version():
+    with pytest.raises(BIDSException, match=escape("invalid type for BIDSVersion field in BIDS JSON description file: 1.1")):
+        new_desc('{"Name": "3", "BIDSVersion": 1.10, "DatasetType": "raw"}')
