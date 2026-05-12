@@ -38,13 +38,18 @@ class BIDSDatasetDescription:
             raise BIDSException(
                 f"can't write dataset description JSON to folder {folder} as it already exists there"
             )
+        except FileNotFoundError:
+            raise BIDSException(f"can't read dataset description JSON from non-existing folder {folder}")
 
-        json_out = {
-            "Name": self.name,
-            "BIDSVersion": str(self.version),
-            "DatasetType": str(self.dataset_type),
-        }
-        json.dump(json_out, json_file)
+        # NOTE: the error handling needs to happen above, but make sure to use a with ...: construct
+        # as otherwise the file will not be flushed or closed
+        with json_file:
+            json_out = {
+                "Name": self.name,
+                "BIDSVersion": str(self.version),
+                "DatasetType": str(self.dataset_type),
+            }
+            json.dump(json_out, json_file)
 
     @classmethod
     def _load_from_folder(cls, desc_json_folder: Path) -> BIDSDatasetDescription:
@@ -55,7 +60,8 @@ class BIDSDatasetDescription:
         except OSError as e:
             raise BIDSException(f"could not open BIDS description JSON file: {e}")
 
-        return BIDSDatasetDescription._load_from_data(desc_file)
+        with desc_file:
+            return BIDSDatasetDescription._load_from_data(desc_file)
 
     @classmethod
     def _load_from_data(cls, reader: Any) -> BIDSDatasetDescription:

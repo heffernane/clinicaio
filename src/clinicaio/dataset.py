@@ -284,7 +284,7 @@ class BIDSDataset:
         .. code-block:: python
 
                 with dataset.write_root_file("README", write_binary=False) as f:
-                        print("Hello world!", file=f)
+                    print("Hello world!", file=f)
         """
 
         if "/" in file_name:
