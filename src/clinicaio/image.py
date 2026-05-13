@@ -153,4 +153,5 @@ class ImageScanInfo:
         return len(self.other_fields) == 0
 
 
-from . import session
+# Necessary to appear last due to parent session field which creates cyclic import otherwise
+from . import session  # noqa: E402

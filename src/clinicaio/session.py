@@ -415,4 +415,5 @@ class SessionInfo:
         )
 
 
-from . import subject
+# Necessary to appear last due to parent subject field which creates cyclic import otherwise
+from . import subject  # noqa: E402

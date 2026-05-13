@@ -214,4 +214,5 @@ class SubjectInfo:
         return len(self.other_fields) == 0
 
 
-from . import dataset
+# Necessary to appear last due to parent dataset field which creates cyclic import otherwise
+from . import dataset  # noqa: E402
