@@ -21,12 +21,6 @@ from .types import BIDSException
 _JSON_FILENAME = "dataset_description.json"
 
 
-def _format_pydantic_error(e: PydanticError) -> str:
-    last_err = e.errors()[0]
-    err_loc = f'field "{last_err["loc"][0]}": ' if len(last_err["loc"]) > 0 else ""
-    return f"{err_loc}{last_err['msg']}"
-
-
 # dataset_description.json at the root of the BIDS dataset
 class BIDSDatasetDescription(BaseModel):
     model_config = ConfigDict(
@@ -67,8 +61,8 @@ class BIDSDatasetDescription(BaseModel):
                 by_name=True,
             )
         except PydanticError as e:
-            raise BIDSException(
-                f"could not create new dataset description: {_format_pydantic_error(e)}"
+            raise BIDSException.from_pydantic(
+                f"could not create new dataset description", e
             )
 
     def _write_to_folder(self, folder: Path):
@@ -103,8 +97,8 @@ class BIDSDatasetDescription(BaseModel):
         try:
             return BIDSDatasetDescription.model_validate_json(desc_json)
         except PydanticError as e:
-            raise BIDSException(
-                f"could not validate BIDS dataset description from JSON {desc_json}: {_format_pydantic_error(e)}"
+            raise BIDSException.from_pydantic(
+                f"could not validate BIDS dataset description from JSON {desc_json}", e
             )
         except TypeError as e:
             raise BIDSException(

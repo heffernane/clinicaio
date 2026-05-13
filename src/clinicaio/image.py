@@ -5,6 +5,9 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Optional
 
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticError
+
 from .entities import Entities
 from .types import BIDSException, DataType, FileExtension, Suffix
 
@@ -68,10 +71,11 @@ class Image:
         suffix = None
         if "-" not in entities[-1]:
             try:
-                suffix = Suffix(entities[-1])
-            except BIDSException as e:
-                raise BIDSException(
-                    f"found invalid suffix label for image filename {filename_after_sub_ses}: {e}"
+                suffix = TypeAdapter(Suffix).validate_python(entities[-1])
+            except PydanticError as e:
+                raise BIDSException.from_pydantic(
+                    f"found invalid suffix label for image filename {filename_after_sub_ses}",
+                    e,
                 )
 
             entities = entities[:-1]

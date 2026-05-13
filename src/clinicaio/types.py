@@ -1,5 +1,43 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
+from typing import Annotated, TypeAlias
+
+from pydantic import Strict, StringConstraints
+from pydantic import ValidationError as PydanticError
+
+Suffix: TypeAlias = Annotated[
+    str, Strict(), StringConstraints(pattern="^[a-zA-Z0-9]+$")
+]
+"""
+An image file's suffix part. `BIDS specification <https://bids-specification.readthedocs.io/en/stable/common-principles.html#definitions>`__
+
+In a usual image file path ``sub-<label>/ses-<label>/<data_type>/sub-<label>_ses-<label>[_<entities>][_<SUFFIX>].<extension>``
+
+Suffixes must be ASCII alphanumeric strings.
+"""
+
+
+# subject id = sub-<label> (for folder names, entities, participants.tsv, etc.)
+SubjectId: TypeAlias = Annotated[
+    str, Strict(), StringConstraints(pattern="^sub-[a-zA-Z0-9]+$")
+]
+"""
+`BIDS specification <https://bids-specification.readthedocs.io/en/stable/common-principles.html#filesystem-structure>`__
+
+A string of the form ``"sub-<label>"`` where label is an ASCII alphanumeric string
+"""
+
+# session id = ses-<label> (for folder names, entities, sessions.tsv, etc.)
+SessionId: TypeAlias = Annotated[
+    str, Strict(), StringConstraints(pattern="^ses-[a-zA-Z0-9]+$")
+]
+"""
+`BIDS specification <https://bids-specification.readthedocs.io/en/stable/common-principles.html#filesystem-structure>`__
+
+A string of the form ``"ses-<label>"`` where label is an ASCII alphanumeric string
+"""
 
 
 @dataclass
@@ -24,92 +62,14 @@ class Label:
         return self.value
 
 
-# subject id = sub-<label> (for folder names, entities, participants.tsv, etc.)
-@dataclass
-class SubjectId:
-    """
-    `BIDS specification <https://bids-specification.readthedocs.io/en/stable/common-principles.html#filesystem-structure>`__
-
-    Parameters
-    ----------
-    id : str
-            a string of the form ``"sub-<label>"`` where label is an ASCII alphanumeric string
-
-    Raises
-    ------
-    BIDSException
-            if the passed id string does not match the expected description above.
-    """
-
-    _id: Label
-    _prefix = "sub-"
-
-    def __init__(self, id: str):
-        if not id.startswith(self._prefix):
-            raise BIDSException(f"BIDS subject ID {id} must start with {self._prefix}")
-
-        try:
-            self._id = Label(id.removeprefix(self._prefix))
-        except BIDSException as e:
-            raise BIDSException(
-                f"BIDS subject id {id} had invalid label (in sub-<label>): {e}"
-            )
-
-    def __str__(self):
-        """Returns the "sub-<label>" form of the subject ID"""
-        return f"{self._prefix}{self._id}"
-
-    def __repr__(self) -> str:
-        return f"'{self}'"
-
-    def __hash__(self):
-        return self._id.value.__hash__()
-
-
-# session id = ses-<label> (for folder names, entities, sessions.tsv, etc.)
-@dataclass
-class SessionId:
-    """
-    `BIDS specification <https://bids-specification.readthedocs.io/en/stable/common-principles.html#filesystem-structure>`__
-
-    Parameters
-    ----------
-    id : str
-            a string of the form ``"ses-<label>"`` where label is an ASCII alphanumeric string
-
-    Raises
-    ------
-    BIDSException
-            if the passed id string does not match the expected description above.
-    """
-
-    _id: Label
-    _prefix = "ses-"
-
-    def __init__(self, id: str):
-        if not id.startswith(self._prefix):
-            raise BIDSException(f"BIDS session ID {id} must start with {self._prefix}")
-
-        try:
-            self._id = Label(id.removeprefix(self._prefix))
-        except BIDSException as e:
-            raise BIDSException(
-                f"BIDS session id {id} had invalid label (in ses-<label>): {e}"
-            )
-
-    def __str__(self):
-        """Returns the "ses-<label>" form of the subject ID"""
-        return f"{self._prefix}{self._id}"
-
-    def __repr__(self) -> str:
-        return f"'{self}'"
-
-    def __hash__(self):
-        return self._id.value.__hash__()
-
-
 class BIDSException(Exception):
-    pass
+    @classmethod
+    def from_pydantic(cls, prefix: str, err: PydanticError) -> BIDSException:
+        last_err = err.errors()[0]
+        err_loc = f'field "{last_err["loc"][0]}": ' if len(last_err["loc"]) > 0 else ""
+        pydantic_msg = f"{err_loc}{last_err['msg']}"
+
+        return BIDSException(f"{prefix}: {pydantic_msg}")
 
 
 class DataType(str, Enum):
@@ -170,24 +130,6 @@ class DataType(str, Enum):
 
     def __str__(self) -> str:
         return self.value
-
-
-@dataclass
-class Suffix(Label):
-    """
-    An image file's suffix part. `BIDS specification <https://bids-specification.readthedocs.io/en/stable/common-principles.html#definitions>`__
-
-    In a usual image file path ``sub-<label>/ses-<label>/<data_type>/sub-<label>_ses-<label>[_<entities>][_<SUFFIX>].<extension>``
-
-    Suffixes must be ASCII alphanumeric strings.
-    """
-
-    def __hash__(self):
-        return self.value.__hash__()
-
-    # FIXME: needed until migrated to Python >= 3.11 StrEnum
-    def __repr__(self) -> str:
-        return f"'{self}'"
 
 
 class FileExtension(str, Enum):

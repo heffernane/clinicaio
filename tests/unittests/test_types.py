@@ -3,71 +3,69 @@ from typing import Any
 
 import pytest
 from packaging.version import Version
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticError
 
 from clinicaio.dataset_description import BIDSDatasetType
 from clinicaio.types import (
     BIDSException,
     DataType,
     FileExtension,
-    Label,
     SessionId,
     SubjectId,
     Suffix,
 )
 
 
-def test_ids_missing_prefix():
-    with pytest.raises(BIDSException, match="BIDS subject ID 001 must start with sub-"):
-        SubjectId("001")
-    with pytest.raises(
-        BIDSException, match="BIDS session ID M000 must start with ses-"
-    ):
-        SessionId("M000")
-
-
-def test_ids_prefix_with_empty_label():
-    with pytest.raises(
-        BIDSException,
-        match=escape(
-            "BIDS subject id sub- had invalid label (in sub-<label>): BIDS label can't be empty"
-        ),
-    ):
-        SubjectId("sub-")
-    with pytest.raises(
-        BIDSException,
-        match=escape(
-            "BIDS session id ses- had invalid label (in ses-<label>): BIDS label can't be empty"
-        ),
-    ):
-        SessionId("ses-")
+@pytest.mark.parametrize(
+    ["id_type", "id", "err_msg"],
+    [
+        (SubjectId, "001", "bids: String should match pattern '^sub-[a-zA-Z0-9]+$'"),
+        (SessionId, "M000", "bids: String should match pattern '^ses-[a-zA-Z0-9]+$'"),
+    ],
+)
+def test_ids_missing_prefix(id_type: type, id: str, err_msg: str):
+    with pytest.raises(BIDSException, match=escape(err_msg)):
+        try:
+            TypeAdapter(id_type).validate_python(id)
+        except PydanticError as e:
+            raise BIDSException.from_pydantic("bids", e)
 
 
 @pytest.mark.parametrize(
-    ["id_class", "value"],
+    ["id_type", "id", "err_msg"],
     [
-        (SubjectId, "sub-123"),
-        (SessionId, "ses-123"),
+        (SubjectId, "sub-", "bids: String should match pattern '^sub-[a-zA-Z0-9]+$'"),
+        (SessionId, "ses-", "bids: String should match pattern '^ses-[a-zA-Z0-9]+$'"),
     ],
 )
-def test_ids_to_str(id_class: type, value: str):
-    assert str(id_class(value)) == value
-
-
-def test_ids_non_alnum_chars():
+def test_ids_prefix_with_empty_label(id_type: type, id: str, err_msg: str):
     with pytest.raises(
         BIDSException,
-        match=escape(
-            "BIDS subject id sub-é had invalid label (in sub-<label>): BIDS label é must be all [a-zA-Z0-9] characters"
-        ),
+        match=escape(err_msg),
     ):
-        SubjectId("sub-é")
+        try:
+            TypeAdapter(id_type).validate_python(id)
+        except PydanticError as e:
+            raise BIDSException.from_pydantic("bids", e)
+
+
+@pytest.mark.parametrize(
+    ["id_type", "id", "err_msg"],
+    [
+        (SubjectId, "sub-é", "bids: String should match pattern '^sub-[a-zA-Z0-9]+$'"),
+        (SessionId, "ses-é", "bids: String should match pattern '^ses-[a-zA-Z0-9]+$'"),
+    ],
+)
+def test_ids_non_alnum_chars(id_type: type, id: str, err_msg: str):
     with pytest.raises(
         BIDSException,
-        match=escape(
-            "BIDS session id ses-é had invalid label (in ses-<label>): BIDS label é must be all [a-zA-Z0-9] characters"
-        ),
+        match=escape(err_msg),
     ):
-        SessionId("ses-é")
+        try:
+            TypeAdapter(id_type).validate_python(id)
+        except PydanticError as e:
+            raise BIDSException.from_pydantic("bids", e)
 
 
 @pytest.mark.parametrize(
@@ -78,12 +76,12 @@ def test_ids_non_alnum_chars():
     ],
 )
 def test_ids_hash_eq(id_class: type, prefix: str):
-    id1 = id_class(f"{prefix}01")
-    id2 = id_class(f"{prefix}02")
-    id1_same = id_class(f"{prefix}01")
+    id1 = TypeAdapter(id_class).validate_python(f"{prefix}01")
+    id2 = TypeAdapter(id_class).validate_python(f"{prefix}02")
+    id1_same = TypeAdapter(id_class).validate_python(f"{prefix}01")
     # The label part of <prefix><label> is not treated particularily with regards
     # to fully integer labels.
-    id1_same_but_different = id_class(f"{prefix}1")
+    id1_same_but_different = TypeAdapter(id_class).validate_python(f"{prefix}1")
 
     assert id1.__hash__() == id1_same.__hash__()
     assert id1 == id1_same
@@ -112,8 +110,16 @@ def test_enum_to_str(enum_value: Any, string_value: str):
     assert f"{enum_value}" == string_value
 
 
+def test_version_to_str():
+    assert str(Version("1.10.0")) == "1.10.0"
+
 @pytest.mark.parametrize(
-    ["wrapper_type", "string"], [(Suffix, "sfx"), (Version, "1.10.0"), (Label, "txt")]
+    ["wrapper_type", "string"],
+    [
+        (Suffix, "sfx"),
+        (SubjectId, "sub-123"),
+        (SessionId, "ses-123"),
+    ],
 )
 def test_wrappers_to_str(wrapper_type: type, string: str):
-    assert str(wrapper_type(string)) == string
+    assert TypeAdapter(wrapper_type).validate_python(string) == string

@@ -150,7 +150,7 @@ def test_read_participants_tsv_invalid_id(fakefs: FakeFilesystem):
     # of the BIDS directory, without validating the ID itself.
     fakefs.create_dir(bids_path / "v")
 
-    msg = f"could not populate subjects info from TSV file {tsv_path}: found invalid subject ID v in dataframe: BIDS subject ID v must start with sub-"
+    msg = f"could not populate subjects info from TSV file {tsv_path}: found invalid subject ID v in dataframe: String should match pattern '^sub-[a-zA-Z0-9]+$'"
     with pytest.raises(BIDSException, match=escape(msg)):
         BIDSDataset.populate_from_dir(
             bids_path, subjects_info=True, sessions_info=False, image_scans_info=False
@@ -179,7 +179,7 @@ def test_read_participants_tsv_na_none_participant_id(fakefs: FakeFilesystem):
     )
     assert dataset.subjects_count() == 1
     subject = list(dataset.all_subjects())[0]
-    assert subject.id == SubjectId("sub-001")
+    assert subject.id == "sub-001"
     assert subject.parent_dataset is dataset
     assert subject.sessions_count() == 0
     assert subject.info == SubjectInfo({"a": "abc", "b": "bce", "c": "cef"})
@@ -226,10 +226,10 @@ def test_read_dataset_subject_structure(fakefs: FakeFilesystem):
     assert dataset.subjects_count() == 2
     subjects = sorted(list(dataset.all_subjects()), key=lambda subject: str(subject.id))
     assert len(subjects) == 2
-    assert subjects[0].id == SubjectId("sub-001")
-    assert subjects[0].id != SubjectId("sub-01")
-    assert subjects[1].id == SubjectId("sub-01")
-    assert subjects[1].id != SubjectId("sub-001")
+    assert subjects[0].id == "sub-001"
+    assert subjects[0].id != "sub-01"
+    assert subjects[1].id == "sub-01"
+    assert subjects[1].id != "sub-001"
     assert subjects[0].info == SubjectInfo({})
     assert subjects[1].info == SubjectInfo({})
     assert subjects[0].info.is_empty()
@@ -261,7 +261,7 @@ def test_read_dataset_invalid_subject_folder_id(fakefs: FakeFilesystem):
     with pytest.raises(
         BIDSException,
         match=escape(
-            f"Found invalid subject/subject ID sub-é001: BIDS subject id sub-é001 had invalid label (in sub-<label>): BIDS label é001 must be all [a-zA-Z0-9] characters"
+            "Found invalid subject/subject ID sub-é001: String should match pattern '^sub-[a-zA-Z0-9]+$'"
         ),
     ):
         BIDSDataset.populate_from_dir(
@@ -294,7 +294,7 @@ def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
     assert len(list(dataset.all_subjects())) == 1
     assert list(dataset.all_subjects())[0] is subject
 
-    assert subject.id == SubjectId("sub-001")
+    assert subject.id == "sub-001"
     assert subject.info.is_empty()
     assert subject.parent_dataset is dataset
     assert subject.sessions_count() == 0

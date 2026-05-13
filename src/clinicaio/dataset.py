@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Optional
 
 from pandas import DataFrame
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticError
 
 from clinicaio import dataset_description
 
@@ -39,8 +41,13 @@ class BIDSDataset:
         self.description = description
         self._subjects = {}
 
-    def subject_by_id(self, id: str | SubjectId) -> Optional[Subject]:
-        return self._subjects.get(id if isinstance(id, SubjectId) else SubjectId(id))
+    def subject_by_id(self, id: SubjectId) -> Optional[Subject]:
+        try:
+            TypeAdapter(SubjectId).validate_python(id)
+        except PydanticError as e:
+            raise BIDSException.from_pydantic(f"invalid subject ID {id}", e)
+
+        return self._subjects.get(id)
 
     def all_subjects(self) -> Iterable[Subject]:
         return self._subjects.values()
@@ -88,11 +95,12 @@ class BIDSDataset:
             subject_id = info.pop("participant_id", None)
             if subject_id is None:
                 continue
+
             try:
-                subject_id = SubjectId(str(subject_id))
-            except BIDSException as e:
-                raise BIDSException(
-                    f"found invalid subject ID {subject_id} in dataframe: {e}"
+                subject_id = TypeAdapter(SubjectId).validate_python(str(subject_id))
+            except PydanticError as e:
+                raise BIDSException.from_pydantic(
+                    f"found invalid subject ID {subject_id} in dataframe", e
                 )
 
             subject = self.subject_by_id(subject_id)
@@ -180,10 +188,10 @@ class BIDSDataset:
                 )
 
             try:
-                subject_id = SubjectId(bids_child.name)
-            except BIDSException as e:
-                raise BIDSException(
-                    f"Found invalid subject/subject ID {bids_child.name}: {e}"
+                subject_id = TypeAdapter(SubjectId).validate_python(bids_child.name)
+            except PydanticError as e:
+                raise BIDSException.from_pydantic(
+                    f"Found invalid subject/subject ID {bids_child.name}", e
                 )
 
             try:
@@ -206,8 +214,11 @@ class BIDSDataset:
         _report_unhandled_entries(unhandled_entries)
         return dataset
 
-    def add_subject(self, id: str | SubjectId, info: Optional[SubjectInfo]) -> Subject:
-        id = id if isinstance(id, SubjectId) else SubjectId(id)
+    def add_subject(self, id: SubjectId, info: Optional[SubjectInfo]) -> Subject:
+        try:
+            TypeAdapter(SubjectId).validate_python(id)
+        except PydanticError as e:
+            raise BIDSException.from_pydantic(f"invalid subject ID {id}", e)
 
         if id in self._subjects:
             raise BIDSException(

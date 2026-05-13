@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Iterable, Optional
 
 from pandas import DataFrame
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticError
 
 from . import image
 from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
@@ -28,8 +30,11 @@ class Subject:
     def _get_full_path(self) -> Path:
         return self.parent_dataset._get_full_path() / f"{self.id}"
 
-    def add_session(self, id: str | SessionId, info: Optional[SessionInfo]) -> Session:
-        id = id if isinstance(id, SessionId) else SessionId(id)
+    def add_session(self, id: SessionId, info: Optional[SessionInfo]) -> Session:
+        try:
+            TypeAdapter(SessionId).validate_python(id)
+        except PydanticError as e:
+            raise BIDSException.from_pydantic("invalid session ID", e)
 
         if id in self._sessions:
             raise BIDSException(
@@ -51,8 +56,13 @@ class Subject:
     def sessions_count(self) -> int:
         return len(self._sessions)
 
-    def session_by_id(self, id: str | SessionId) -> Optional[Session]:
-        return self._sessions.get(id if isinstance(id, SessionId) else SessionId(id))
+    def session_by_id(self, id: SessionId) -> Optional[Session]:
+        try:
+            TypeAdapter(SessionId).validate_python(id)
+        except PydanticError as e:
+            raise BIDSException.from_pydantic("invalid session ID", e)
+
+        return self._sessions.get(id)
 
     def all_images(self) -> Iterable[image.Image]:
         for session in self.all_sessions():
@@ -112,10 +122,10 @@ class Subject:
             if session_id is None:
                 continue
             try:
-                session_id = SessionId(str(session_id))
-            except BIDSException as e:
-                raise BIDSException(
-                    f"found invalid session ID {session_id} in dataframe: {e}"
+                session_id = TypeAdapter(SessionId).validate_python(str(session_id))
+            except PydanticError as e:
+                raise BIDSException.from_pydantic(
+                    f"invalid session ID {session_id} in dataframe", e
                 )
 
             session = self.session_by_id(session_id)
@@ -165,9 +175,11 @@ class Subject:
                 )
 
             try:
-                session_id = SessionId(child.name)
-            except BIDSException as e:
-                raise BIDSException(f"Found invalid session ID {child.name}: {e}")
+                session_id = TypeAdapter(SessionId).validate_python(child.name)
+            except PydanticError as e:
+                raise BIDSException.from_pydantic(
+                    f"Found invalid session ID {child.name}", e
+                )
 
             try:
                 session = self.add_session(id=session_id, info=None)

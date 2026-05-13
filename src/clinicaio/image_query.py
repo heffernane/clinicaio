@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
+
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticError
 
 from .entities import Entities, EntitiesLike
 from .types import BIDSException, DataType, SessionId, SubjectId, Suffix
@@ -17,17 +20,17 @@ class ImageQuery:
 
     Parameters
     ----------
-    subjects : set[str | SubjectId] | list[str | SubjectId], default=[]
+    subjects : Optional[Iterable[SessionId]], default=None
             The subjects (by their IDs) to specifically keep. If empty, includes all of them.
-    session : set[str | SessionId] | list[str | SessionId], default=[]
+    session : Optional[Iterable[SessionId]], default=None
             The subjects (by their IDs) to specifically keep. If empty, includes all of them.
     data_type : Optional[DataType], default=None
             The data type of the image. If ``None``, all of them are kept.
-    entities : Entities | dict[str | EntityKey, str | EntityValue] | list[str] | str, default={}
+    entities : EntitiesLike, default=None
             The entities to specifically look for in the images. For convenience it can also
             be specified either in a dictionary form, or a list of ``"<key>-<value>"``, or
             as a fully-formed BIDS entities string ``"<key1>-<value1>_..._<keyN>-<valueN>"``.
-    suffix : Optional[str | Suffix], default=None
+    suffix : Optional[Suffix], default=None
             The suffix to specifically look for in the images. If ``None``, all of them are kept.
 
     Examples
@@ -66,27 +69,35 @@ class ImageQuery:
     def __init__(
         self,
         *,
-        subjects: Optional[Iterable[str | SubjectId]] = None,
-        sessions: Optional[Iterable[str | SessionId]] = None,
+        subjects: Optional[Iterable[SubjectId]] = None,
+        sessions: Optional[Iterable[SessionId]] = None,
         data_type: Optional[DataType] = None,
         # { "trc": "11CPIB", "run": "1"}
         # or "trc-11CPIB_run-1"
         # or ["trc-11CPIB", "run-1"]
         entities: EntitiesLike = None,
         # +/- modality
-        suffix: Optional[str | Suffix] = None,
+        suffix: Optional[Suffix] = None,
     ):
-        type_or_type_from_val = lambda v, typ: v if isinstance(v, typ) else typ(v)
+        def validate_str(str_type: Any, s: str, err_prefix: str) -> Any:
+            try:
+                return TypeAdapter(str_type).validate_python(s)
+            except PydanticError as e:
+                raise BIDSException.from_pydantic(f"{err_prefix} ({s})", e)
 
         self.subjects = (
             set()
             if subjects is None
-            else set(type_or_type_from_val(id, SubjectId) for id in subjects)
+            else set(
+                validate_str(SubjectId, id, "invalid subject ID") for id in subjects
+            )
         )
         self.sessions = (
             set()
             if sessions is None
-            else set(type_or_type_from_val(id, SessionId) for id in sessions)
+            else set(
+                validate_str(SessionId, id, "invalid session ID") for id in sessions
+            )
         )
         if not ((data_type is None) or (type(data_type) == DataType)):
             raise BIDSException(
@@ -97,4 +108,6 @@ class ImageQuery:
 
         self.entities = Entities.from_any(entities)
 
-        self.suffix = None if suffix is None else type_or_type_from_val(suffix, Suffix)
+        self.suffix = (
+            None if suffix is None else validate_str(Suffix, suffix, "invalid suffix")
+        )

@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Iterable, Optional
 
 from pandas import DataFrame
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticError
 
 from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
 from .entities import Entities, EntitiesLike
@@ -327,11 +329,14 @@ class ImagesWriter:
         data_type: DataType,
         nifti_extension: FileExtension,
         entities: EntitiesLike,
-        suffix: Optional[Suffix | str],
+        suffix: Optional[Suffix],
         scan_info: Optional[ImageScanInfo],
     ) -> Image:
         if suffix is not None:
-            suffix = suffix if isinstance(suffix, Suffix) else Suffix(suffix)
+            try:
+                TypeAdapter(Suffix).validate_python(suffix)
+            except PydanticError as e:
+                raise BIDSException.from_pydantic("invalid suffix", e)
 
         image = self.session._add_image(
             data_type, nifti_extension, Entities.from_any(entities), suffix, scan_info
