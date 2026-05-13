@@ -35,6 +35,7 @@ dependencies = [
     "pandas",
     #"nbsphinx",
     "packaging",
+    "pydantic",
 ]
 
 [project.urls]

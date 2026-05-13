@@ -34,8 +34,8 @@ def _setup_dataset_description(fakefs: FakeFilesystem) -> BIDSDatasetDescription
         contents='{"Name": "TEST 123", "BIDSVersion": "1.11.0", "DatasetType": "derivative"}',
     )
 
-    return BIDSDatasetDescription(
-        BIDSDatasetType.DERIVATIVE, name="TEST 123", version="1.11.0"
+    return BIDSDatasetDescription.new(
+        BIDSDatasetType.DERIVATIVE, name="TEST 123", bids_version="1.11.0"
     )
 
 
@@ -86,8 +86,8 @@ def test_read_dataset_description(fakefs: FakeFilesystem):
     )
     assert type(dataset.description) == BIDSDatasetDescription
     assert dataset.description.name == "TEST 123"
-    assert str(dataset.description.version) == "1.11.0"
-    assert dataset.description.version == Version("1.11.0")
+    assert str(dataset.description.bids_version) == "1.11.0"
+    assert dataset.description.bids_version == Version("1.11.0")
     assert dataset.description.dataset_type == BIDSDatasetType.DERIVATIVE
 
 

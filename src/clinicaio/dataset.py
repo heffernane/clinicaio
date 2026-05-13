@@ -8,6 +8,8 @@ from typing import Any, Callable, Iterable, Optional
 
 from pandas import DataFrame
 
+from clinicaio import dataset_description
+
 from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
 from .dataset_description import BIDSDatasetDescription
 from .image import Image
@@ -165,7 +167,7 @@ class BIDSDataset:
                 continue
 
             # Already handled above
-            if bids_child.name == BIDSDatasetDescription._JSON_FILENAME:
+            if bids_child.name == dataset_description._JSON_FILENAME:
                 continue
 
             if not bids_child.name.startswith("sub-"):
