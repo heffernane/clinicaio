@@ -40,7 +40,7 @@ class Entities:
 
         Parameters
         ----------
-        entities : dict[str | EntityKey, str | EntityValue]]
+        entities :
                 the entities made of key/value pairs. Either one can be the fully validated class or a string,
                 in which case they will be validated by this function.
 
@@ -71,7 +71,7 @@ class Entities:
 
         Parameters
         ----------
-        entities : list[str]
+        entities :
                 List of the form ``["<key1>-<value1>", ....., "<keyN>-<valueN>"]``
 
         Raises
@@ -108,7 +108,7 @@ class Entities:
 
         Parameters
         ----------
-        entities : str
+        entities :
                 String of the form ``"<key1>-<value1>_..._<keyN>-<valueN>"``
 
         Raises

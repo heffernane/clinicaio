@@ -20,17 +20,17 @@ class ImageQuery:
 
     Parameters
     ----------
-    subjects : Optional[Iterable[SessionId]], default=None
+    subjects :
             The subjects (by their IDs) to specifically keep. If empty, includes all of them.
-    session : Optional[Iterable[SessionId]], default=None
+    session :
             The subjects (by their IDs) to specifically keep. If empty, includes all of them.
-    data_type : Optional[DataType], default=None
+    data_type :
             The data type of the image. If ``None``, all of them are kept.
-    entities : EntitiesLike, default=None
+    entities :
             The entities to specifically look for in the images. For convenience it can also
             be specified either in a dictionary form, or a list of ``"<key>-<value>"``, or
             as a fully-formed BIDS entities string ``"<key1>-<value1>_..._<keyN>-<valueN>"``.
-    suffix : Optional[Suffix], default=None
+    suffix :
             The suffix to specifically look for in the images. If ``None``, all of them are kept.
 
     Examples

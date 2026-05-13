@@ -18,10 +18,13 @@ extensions = [
     "autoapi.extension",
     "sphinx.ext.napoleon",
     "myst_nb",
+    "sphinx.ext.autodoc.typehints",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+autodoc_typehints = "both"
 
 napoleon_numpy_docstring = True
 napoleon_custom_sections = [("Returns", "params_style"), ("Attributes", "params_style")]

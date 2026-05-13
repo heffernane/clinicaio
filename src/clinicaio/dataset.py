@@ -145,13 +145,13 @@ class BIDSDataset:
 
         Parameters
         ----------
-        bids_dir : Path
+        bids_dir :
                 The directory where the BIDS dataset exists
-        subjects_info : bool
+        subjects_info :
                 Whether to fill out subject information from the ``participants.tsv`` file
-        sessions_info : bool
+        sessions_info :
                 Whether to fill out session information from the ``*_sessions.tsv`` files
-        image_scans_info : bool
+        image_scans_info :
                 Whether to fill out image scan information from the ``*_scans.tsv`` files
 
         Raises
@@ -277,9 +277,9 @@ class BIDSDataset:
 
         Parameters
         ----------
-        file_name : str
+        file_name :
                 The name of the file to write. Must not contain a ``/``
-        write_binary : bool
+        write_binary :
                 Whether to open the created file in binary or text writing mode
 
         Raises
