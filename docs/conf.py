@@ -19,15 +19,25 @@ extensions = [
     "sphinx.ext.napoleon",
     "myst_nb",
     "sphinx.ext.autodoc.typehints",
+    "sphinx.ext.intersphinx",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
 autodoc_typehints = "both"
 
+# https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 napoleon_numpy_docstring = True
 napoleon_custom_sections = [("Returns", "params_style"), ("Attributes", "params_style")]
+
+# https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+    "packaging": ("https://packaging.pypa.io/en/stable/", None),
+}
 
 # -- autoapi configuration ---------------------------------------------------
 # https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html

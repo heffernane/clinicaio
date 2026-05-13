@@ -113,6 +113,7 @@ def test_enum_to_str(enum_value: Any, string_value: str):
 def test_version_to_str():
     assert str(Version("1.10.0")) == "1.10.0"
 
+
 @pytest.mark.parametrize(
     ["wrapper_type", "string"],
     [
