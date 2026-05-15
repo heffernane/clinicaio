@@ -19,16 +19,28 @@ from clinicaio.types import BIDSException, SubjectId
 # NOTE: all the fakefs.create_*() calls create the whole file hierarchy that appears in the path, for convenience.
 
 
+# NOTE: do not create global Path here as they will not be setup in the fakefs, which will cause issues later.
+# https://github.com/pytest-dev/pyfakefs/discussions/1312
+# https://pytest-pyfakefs.readthedocs.io/en/latest/troubleshooting.html#pathlib-path-objects-created-outside-of-tests
+#
+# Esssentially when one of the paths used is a "real" pathlib one and
+# an other one is from pyfakefs's fake pathlib replacement module, then
+# Path.relative_to() (in BIDSDataset.populate_from_dir()) does not work well
+# as it outputs '/tmp/bids_test/README' is not in the subpath of '/tmp/bids_test'
+# which is nonsense.
+
+
 # Rename the pyfakefs fixture so it's clearer what it actually is
 @pytest.fixture
 def fakefs(fs):
     yield fs
 
+@pytest.fixture
+def bids_path():
+    return Path("/tmp/bids_test")
 
-bids_path = Path("/tmp/bids_test")
 
-
-def _setup_dataset_description(fakefs: FakeFilesystem) -> BIDSDatasetDescription:
+def _setup_dataset_description(fakefs: FakeFilesystem, bids_path: Path) -> BIDSDatasetDescription:
     fakefs.create_file(
         bids_path / "dataset_description.json",
         contents='{"Name": "TEST 123", "BIDSVersion": "1.11.0", "DatasetType": "derivative"}',
@@ -78,8 +90,8 @@ def test_fakefs_setup(fakefs: FakeFilesystem):
 
 
 # Deeper testing of the dataset description happens in the eponymous test
-def test_read_dataset_description(fakefs: FakeFilesystem):
-    _setup_dataset_description(fakefs)
+def test_read_dataset_description(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
 
     dataset = BIDSDataset.populate_from_dir(
         bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
@@ -91,7 +103,7 @@ def test_read_dataset_description(fakefs: FakeFilesystem):
     assert dataset.description.dataset_type == BIDSDatasetType.DERIVATIVE
 
 
-def test_missing_dataset_description(fakefs: FakeFilesystem):
+def test_missing_dataset_description(fakefs: FakeFilesystem, bids_path: Path):
     with pytest.raises(
         BIDSException,
         match=f"^could not read BIDS description from JSON file: could not open BIDS description JSON file: ",
@@ -101,8 +113,8 @@ def test_missing_dataset_description(fakefs: FakeFilesystem):
         )
 
 
-def test_read_participants_tsv_missing_id_column(fakefs: FakeFilesystem):
-    _setup_dataset_description(fakefs)
+def test_read_participants_tsv_missing_id_column(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
 
     tsv_path = bids_path / "participants.tsv"
     fakefs.create_file(
@@ -117,8 +129,8 @@ def test_read_participants_tsv_missing_id_column(fakefs: FakeFilesystem):
         )
 
 
-def test_read_participants_tsv_missing_id_column_disabled(fakefs: FakeFilesystem):
-    _setup_dataset_description(fakefs)
+def test_read_participants_tsv_missing_id_column_disabled(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
 
     tsv_path = bids_path / "participants.tsv"
     fakefs.create_file(
@@ -133,8 +145,8 @@ def test_read_participants_tsv_missing_id_column_disabled(fakefs: FakeFilesystem
     )
 
 
-def test_read_participants_tsv_invalid_id(fakefs: FakeFilesystem):
-    _setup_dataset_description(fakefs)
+def test_read_participants_tsv_invalid_id(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
 
     tsv_path = bids_path / "participants.tsv"
     fakefs.create_file(
@@ -157,8 +169,8 @@ def test_read_participants_tsv_invalid_id(fakefs: FakeFilesystem):
         )
 
 
-def test_read_participants_tsv_na_none_participant_id(fakefs: FakeFilesystem):
-    _setup_dataset_description(fakefs)
+def test_read_participants_tsv_na_none_participant_id(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
 
     tsv_path = bids_path / "participants.tsv"
     fakefs.create_file(
@@ -185,8 +197,8 @@ def test_read_participants_tsv_na_none_participant_id(fakefs: FakeFilesystem):
     assert subject.info == SubjectInfo({"a": "abc", "b": "bce", "c": "cef"})
 
 
-def test_read_dataset_subject_structure(fakefs: FakeFilesystem):
-    desc = _setup_dataset_description(fakefs)
+def test_read_dataset_subject_structure(fakefs: FakeFilesystem, bids_path: Path):
+    desc = _setup_dataset_description(fakefs, bids_path)
     fakefs.create_file(bids_path / "README")
     fakefs.create_dir(bids_path / "sub-001")
     fakefs.create_dir(bids_path / "sub-01")
@@ -242,8 +254,8 @@ def test_read_dataset_subject_structure(fakefs: FakeFilesystem):
     assert list(subjects[1].all_sessions()) == []
 
 
-def test_read_dataset_non_directory_subject(fakefs: FakeFilesystem):
-    _setup_dataset_description(fakefs)
+def test_read_dataset_non_directory_subject(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
     fakefs.create_file(bids_path / "sub-001")
 
     with pytest.raises(
@@ -254,8 +266,8 @@ def test_read_dataset_non_directory_subject(fakefs: FakeFilesystem):
         )
 
 
-def test_read_dataset_invalid_subject_folder_id(fakefs: FakeFilesystem):
-    _setup_dataset_description(fakefs)
+def test_read_dataset_invalid_subject_folder_id(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
     fakefs.create_dir(bids_path / "sub-é001")
 
     with pytest.raises(
@@ -269,8 +281,8 @@ def test_read_dataset_invalid_subject_folder_id(fakefs: FakeFilesystem):
         )
 
 
-def test_read_dataset_propagate_sessions_exceptions(fakefs: FakeFilesystem):
-    _setup_dataset_description(fakefs)
+def test_read_dataset_propagate_sessions_exceptions(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
     # Note that we're creating a file here, not a directory (which is incorrect BIDS-wise)
     fakefs.create_file(bids_path / "sub-001" / "ses-001")
 
@@ -283,8 +295,8 @@ def test_read_dataset_propagate_sessions_exceptions(fakefs: FakeFilesystem):
         )
 
 
-def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(Path("/does/not/exist"), _setup_dataset_description(fakefs))
+def test_add_subject_duplicate_id(fakefs: FakeFilesystem, bids_path: Path):
+    dataset = BIDSDataset(Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path))
 
     assert dataset.subjects_count() == 0
     assert list(dataset.all_subjects()) == []
@@ -307,16 +319,16 @@ def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
         dataset.add_subject("sub-001", None)
 
 
-def test_add_subject_none_info(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(Path("/does/not/exist"), _setup_dataset_description(fakefs))
+def test_add_subject_none_info(fakefs: FakeFilesystem, bids_path: Path):
+    dataset = BIDSDataset(Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path))
 
     subject = dataset.add_subject("sub-001", None)
     assert subject.info.all_fields() == {}
     assert subject.info.is_empty()
 
 
-def test_add_subject_provided_info(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(Path("/does/not/exist"), _setup_dataset_description(fakefs))
+def test_add_subject_provided_info(fakefs: FakeFilesystem, bids_path: Path):
+    dataset = BIDSDataset(Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path))
 
     dct = {"a": "abc", "bcd": "a"}
     subject = dataset.add_subject("sub-001", SubjectInfo(dct))
@@ -324,8 +336,8 @@ def test_add_subject_provided_info(fakefs: FakeFilesystem):
     assert subject.info == SubjectInfo(dct)
 
 
-def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(Path("/does/not/exist"), _setup_dataset_description(fakefs))
+def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem, bids_path: Path):
+    dataset = BIDSDataset(Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path))
 
     with pytest.raises(
         BIDSException,
@@ -337,9 +349,9 @@ def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem):
             pass
 
 
-def test_write_root_file_already_existing(fakefs: FakeFilesystem):
+def test_write_root_file_already_existing(fakefs: FakeFilesystem, bids_path: Path):
     fakefs.create_file(bids_path / "README")
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs))
+    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
 
     with pytest.raises(
         BIDSException,
@@ -349,10 +361,10 @@ def test_write_root_file_already_existing(fakefs: FakeFilesystem):
             pass
 
 
-def test_write_root_file_already_existing_directory(fakefs: FakeFilesystem):
+def test_write_root_file_already_existing_directory(fakefs: FakeFilesystem, bids_path: Path):
     # Note that here a directory is created instead of a file
     fakefs.create_dir(bids_path / "README")
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs))
+    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
 
     with pytest.raises(
         BIDSException,
@@ -362,8 +374,8 @@ def test_write_root_file_already_existing_directory(fakefs: FakeFilesystem):
             pass
 
 
-def test_write_root_file_text_mode(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs))
+def test_write_root_file_text_mode(fakefs: FakeFilesystem, bids_path: Path):
+    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
 
     with dataset.write_root_file("README", write_binary=False) as f:
         f.write("foo")
@@ -377,8 +389,8 @@ def test_write_root_file_text_mode(fakefs: FakeFilesystem):
             f.write(b"foo")
 
 
-def test_write_root_file_binary_mode(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs))
+def test_write_root_file_binary_mode(fakefs: FakeFilesystem, bids_path: Path):
+    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
 
     with dataset.write_root_file("README", write_binary=True) as f:
         f.write(b"foo")
