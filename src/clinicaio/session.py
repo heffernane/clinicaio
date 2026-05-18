@@ -399,10 +399,15 @@ class SessionInfo:
     other_fields: dict[str, Any]
 
     def all_fields(self) -> dict[str, Any]:
-        return self.other_fields | {
-            "acq_time": self.acquisition_time,
-            "pathology": self.pathology,
-        }
+        fields = self.other_fields
+        if self.acquisition_time is not None:
+            # NOTE: fields = fields | {...} is not the same as fields |= {}: the former creates
+            # a new dict while the later overwrites the existing one, which is not wanted here.
+            fields = fields | {"acq_time": self.acquisition_time}
+        if self.pathology is not None:
+            fields = fields | {"pathology": self.pathology}
+
+        return fields
 
     # It's preferable to avoid having two None-like SessionInfo: the real None stored in
     # session.info, and a SessionInfo with all None and {} fields. As such, just always
