@@ -184,7 +184,7 @@ def test_read_participants_tsv_na_none_participant_id(
     assert subject.id == "sub-001"
     assert subject.parent_dataset is dataset
     assert subject.sessions_count() == 0
-    assert subject.info == SubjectInfo({"a": "abc", "b": "bce", "c": "cef"})
+    assert subject.info == SubjectInfo.from_fields({"a": "abc", "b": "bce", "c": "cef"})
 
 
 def test_read_dataset_subject_structure(fakefs: FakeFilesystem, bids_path: Path):
@@ -232,8 +232,8 @@ def test_read_dataset_subject_structure(fakefs: FakeFilesystem, bids_path: Path)
     assert subjects[0].id != "sub-01"
     assert subjects[1].id == "sub-01"
     assert subjects[1].id != "sub-001"
-    assert subjects[0].info == SubjectInfo({})
-    assert subjects[1].info == SubjectInfo({})
+    assert subjects[0].info == SubjectInfo.from_fields({})
+    assert subjects[1].info == SubjectInfo.from_fields({})
     assert subjects[0].info.is_empty()
     assert subjects[1].info.is_empty()
     assert subjects[0].parent_dataset is dataset
@@ -331,9 +331,9 @@ def test_add_subject_provided_info(fakefs: FakeFilesystem, bids_path: Path):
     )
 
     dct = {"a": "abc", "bcd": "a"}
-    subject = dataset.add_subject("sub-001", SubjectInfo(dct))
+    subject = dataset.add_subject("sub-001", SubjectInfo.from_fields(dct))
     assert subject.info.all_fields() == dct
-    assert subject.info == SubjectInfo(dct)
+    assert subject.info == SubjectInfo.from_fields(dct)
 
 
 def test_add_subject_invalid_id(fakefs: FakeFilesystem, bids_path: Path):

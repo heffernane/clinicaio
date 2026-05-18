@@ -398,6 +398,19 @@ class SessionInfo:
     pathology: Optional[str]
     other_fields: dict[str, Any]
 
+    @classmethod
+    def from_fields(cls, fields: dict[str, Any]) -> SessionInfo:
+        if "session_id" in fields:
+            raise BIDSException("found unexpected session_id field in session info")
+
+        has_any_field = any(v is not None for v in fields)
+
+        return SessionInfo(
+            acquisition_time=fields.pop("acq_time", None),
+            pathology=fields.pop("pathology", None),
+            other_fields=fields if has_any_field else {},
+        )
+
     def all_fields(self) -> dict[str, Any]:
         fields = self.other_fields
         if self.acquisition_time is not None:
@@ -408,6 +421,9 @@ class SessionInfo:
             fields = fields | {"pathology": self.pathology}
 
         return fields
+
+    def all_fields_with_id(self, session: Session) -> dict[str, Any]:
+        return self.all_fields() | {"session_id": session.id}
 
     # It's preferable to avoid having two None-like SessionInfo: the real None stored in
     # session.info, and a SessionInfo with all None and {} fields. As such, just always

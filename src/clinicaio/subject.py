@@ -44,7 +44,7 @@ class Subject:
         session = Session(
             parent_subject=self,
             id=id,
-            info=SessionInfo(None, None, {}) if info is None else info,
+            info=SessionInfo.from_fields({}) if info is None else info,
         )
         self._sessions[id] = session
 
@@ -92,7 +92,7 @@ class Subject:
             subject_path / self._sessions_tsv_file_name,
             first_column_name="session_id",
             rows=(
-                session.info.all_fields() | {"session_id": session.id}
+                session.info.all_fields_with_id(session)
                 for session in self.all_sessions()
                 if not session.info.is_empty()
             ),
@@ -133,12 +133,7 @@ class Subject:
                 continue
                 # raise BIDSException(f"could not find session of ID {session_id} referenced by TSV file {sessions_tsv_path}")
 
-            has_any_field = all(v is None for v in info)
-            session.info = SessionInfo(
-                acquisition_time=info.pop("acq_time", None),
-                pathology=info.pop("pathology", None),
-                other_fields=info if has_any_field else {},
-            )
+            session.info = SessionInfo.from_fields(info)
 
     def _populate_sessions_info_from_tsv(self):
         """Reads the subject's sessions.tsv and fills out info in all sessions"""
@@ -197,7 +192,7 @@ class Subject:
 
 
 # Populated from participants.tsv from root of dataset
-@dataclass
+@dataclass(init=False)
 class SubjectInfo:
     """
     `BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file>`__
@@ -205,13 +200,28 @@ class SubjectInfo:
 
     # FIXME: proper typing for the fields that BIDS defines?
     # age, handedness, etc.
-    other_fields: dict[str, Any]
+    _other_fields: dict[str, Any]
+
+    def __init__(self, *, other_fields: dict[str, Any]):
+        if "participant_id" in other_fields:
+            raise BIDSException("found unexpected participant_id field in subject info")
+
+        self._other_fields = other_fields
+
+    @classmethod
+    def from_fields(cls, fields: dict[str, Any]) -> SubjectInfo:
+        return SubjectInfo(
+            other_fields={} if all(v is None for v in fields.values()) else fields,
+        )
 
     def all_fields(self) -> dict[str, Any]:
-        return self.other_fields
+        return self._other_fields
+
+    def all_fields_with_id(self, subject: Subject) -> dict[str, Any]:
+        return self.all_fields() | {"participant_id": subject.id}
 
     def is_empty(self) -> bool:
-        return len(self.other_fields) == 0
+        return len(self._other_fields) == 0
 
 
 # Necessary to appear last due to parent dataset field which creates cyclic import otherwise

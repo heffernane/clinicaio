@@ -108,9 +108,7 @@ class BIDSDataset:
                 continue
                 # raise BIDSException(f"could not find subject of ID {subject_id} referenced by TSV file {participants_tsv_path}")
 
-            subject.info = SubjectInfo(
-                other_fields={} if all(v is None for v in info.values()) else info
-            )
+            subject.info = SubjectInfo.from_fields(info)
 
     def _populate_subjects_info_from_tsv(self):
         participants_tsv_path = self._get_full_path() / self._participants_tsv_file_name
@@ -226,7 +224,9 @@ class BIDSDataset:
             )
 
         subject = Subject(
-            parent_dataset=self, id=id, info=SubjectInfo({}) if info is None else info
+            parent_dataset=self,
+            id=id,
+            info=SubjectInfo.from_fields({}) if info is None else info,
         )
         self._subjects[id] = subject
 
@@ -261,7 +261,7 @@ class BIDSDataset:
             tsv_path=self._bids_path / "participants.tsv",
             first_column_name="participant_id",
             rows=(
-                subject.info.all_fields() | {"participant_id": subject.id}
+                subject.info.all_fields_with_id(subject)
                 for subject in self.all_subjects()
                 if not subject.info.is_empty()
             ),
