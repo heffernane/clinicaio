@@ -336,6 +336,20 @@ def test_add_subject_provided_info(fakefs: FakeFilesystem, bids_path: Path):
     assert subject.info == SubjectInfo(dct)
 
 
+def test_add_subject_invalid_id(fakefs: FakeFilesystem, bids_path: Path):
+    dataset = BIDSDataset(
+        Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path)
+    )
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "invalid subject ID sub-é: String should match pattern '^sub-[a-zA-Z0-9]+$'"
+        ),
+    ):
+        dataset.add_subject("sub-é", None)
+
+
 def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem, bids_path: Path):
     dataset = BIDSDataset(
         Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path)
