@@ -234,24 +234,17 @@ class BIDSDataset:
 
     def write_to_folder(self, *, readme: str):
         """
-        Creates the dataset folder, writes the dataset description JSON, creates the subjects and sessions
-        folders with their TSV files. Images are not written here. To decide what content to write in each image
-        file, you must then use :py:meth:`Session.write_images() <clinicaio.session.Session.write_images>`
+        Creates the dataset folder, writes the dataset description JSON and readme, creates the subjects and sessions
+        folders with their TSV files. Images must have already been added to the sessions with
+        :py:meth:`Session.write_image() <clinicaio.session.Session.write_image>` before using this method,
+        otherwise the image scans info will be missing.
 
         See also
         --------
         * :py:meth:`write_root_file`
+        * :py:meth:`Session.write_image() <clinicaio.session.Session.write_image>`
         """
-        try:
-            os.mkdir(self._bids_path)
-        except FileExistsError:
-            raise BIDSException(
-                f"BIDS can't be written as it already exists at {self._bids_path}"
-            )
-        except FileNotFoundError:
-            raise BIDSException(
-                f"BIDS can't be written as one of its parent folders is missing ({self._bids_path})"
-            )
+        os.makedirs(self._bids_path, exist_ok=True)
 
         self.description._write_to_folder(self._bids_path)
         for subject in self.all_subjects():

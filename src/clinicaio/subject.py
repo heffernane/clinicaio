@@ -74,16 +74,7 @@ class Subject:
 
     def _write_to_folder(self):
         subject_path = self._get_full_path()
-        try:
-            os.mkdir(subject_path)
-        except FileExistsError:
-            raise BIDSException(
-                f"BIDS subject folder {subject_path} can't be written as it already exists"
-            )
-        except FileNotFoundError:
-            raise BIDSException(
-                f"BIDS subject folder {subject_path} can't be written as one of its parent folders is missing"
-            )
+        os.makedirs(subject_path, exist_ok=True)
 
         for session in self.all_sessions():
             session._write_to_folder()

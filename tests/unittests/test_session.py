@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from re import escape
 
@@ -5,7 +6,9 @@ import pytest
 from pyfakefs.fake_filesystem import FakeFilesystem
 
 from clinicaio.dataset import BIDSDataset
-from clinicaio.types import BIDSException
+from clinicaio.types import BIDSException, DataType, FileExtension
+
+from _utils import _get_dataset_description, _setup_dataset_description
 
 
 # Rename the pyfakefs fixture so it's clearer what it actually is
@@ -57,3 +60,28 @@ def test_duplicated_images_different_file_extension(fakefs: FakeFilesystem):
         BIDSDataset.populate_from_dir(
             bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
         )
+
+
+def test_write_image_parent_directories(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    dataset = BIDSDataset(bids_path, _get_dataset_description())
+    subject = dataset.add_subject("sub-001", None)
+    session = subject.add_session("ses-A", None)
+
+    assert not fakefs.exists(bids_path)
+
+    session.write_image(
+        DataType.ANAT,
+        FileExtension.NII_GZ,
+        entities={},
+        suffix="T1w",
+        scan_info=None
+    )
+
+    assert sorted(list(os.listdir(bids_path))) == ["sub-001"]
+    assert fakefs.isdir(bids_path / "sub-001" / "ses-A" / "anat")
+
+    dataset.write_to_folder(readme="README test")
+
+    assert sorted(list(os.listdir(bids_path))) == ["README", "dataset_description.json", "sub-001"]

@@ -54,16 +54,24 @@ class Session:
 
     def _write_to_folder(self):
         session_path = self._get_full_path()
-        try:
-            os.mkdir(session_path)
-        except FileExistsError:
-            raise BIDSException(
-                f"BIDS session folder {session_path} can't be written as it already exists"
-            )
-        except FileNotFoundError:
-            raise BIDSException(
-                f"BIDS session folder {session_path} can't be written as one of its parent folders is missing"
-            )
+        os.makedirs(session_path, exist_ok=True)
+
+        # *_scans.tsv writing
+        rows = (
+            image.scan_info.all_fields()
+            | {
+                "filename": str(
+                    image.get_nifti_image_path().relative_to(session_path)
+                )
+            }
+            for image in self.all_images()
+            if not image.scan_info.is_empty()
+        )
+        _write_rows_to_tsv(
+            session_path / self._scans_tsv_file_name,
+            first_column_name="filename",
+            rows=rows,
+        )
 
     def _add_image(
         self,
@@ -93,16 +101,47 @@ class Session:
         self._images[data_type].append(image)
 
         return image
-
-    def write_images(self) -> ImagesWriter:
+    
+    def write_image(
+        self,
+        data_type: DataType,
+        nifti_extension: FileExtension,
+        *,
+        entities: EntitiesLike,
+        suffix: Optional[Suffix],
+        scan_info: Optional[ImageScanInfo],
+    ) -> Image:
         """
-        Start the images writing process for this session. This must happen after calling :py:meth:`BIDSDataset.write_to_folder <clinicaio.dataset.BIDSDataset.write_to_folder>`.
+        Adds the image created with the given properties to the session, and creates
+        its parent folders.
+
+        Returns
+        -------
+        The created image.
+            You can now use its methods to obtain the path to the NIFTI image or one of its
+            companion files, which you can use to write them. You must at least create the NIFTI image itself
+            or the BIDS will be invalid.
 
         See also
         --------
-        * :py:class:`ImagesWriter`
+        * :py:meth:`Image.get_nifti_image_path() <clinicaio.image.Image.get_nifti_image_path>`
+        * :py:meth:`Image.get_image_companion_file_path() <clinicaio.image.Image.get_image_companion_file_path>`
         """
-        return ImagesWriter(session=self)
+
+        if suffix is not None:
+            try:
+                TypeAdapter(Suffix).validate_python(suffix)
+            except PydanticError as e:
+                raise BIDSException.from_pydantic("invalid suffix", e)
+
+        image = self._add_image(
+            data_type, nifti_extension, Entities.from_any(entities), suffix, scan_info
+        )
+
+        data_type_folder_path = self._get_full_path() / f"{data_type}"
+        os.makedirs(data_type_folder_path, exist_ok=True)
+        
+        return image
 
     @cached_property
     def _scans_tsv_file_name(self) -> str:
@@ -122,7 +161,7 @@ class Session:
         --------
         You should only ever use this function if it is more convenient enough
         for your use case when you are writing a new BIDS dataset. Filling-in
-        the information directly from :py:meth:`ImagesWriter.write_image` should be favored.
+        the information directly from :py:meth:`Session.write_image` should be favored.
         """
         if "filename" not in scans_tsv_df.columns:
             raise BIDSException(f"dataframe did not have required filename column")
@@ -303,87 +342,6 @@ class Session:
             self._populate_image_scans_info_from_tsv()
 
         return unhandled_entries
-
-
-@dataclass
-class ImagesWriter:
-    """
-    Automatic image scan info writer.
-
-    The goal of this class is to automatically write the session's ``*_scans.tsv`` file with all the information
-    provided in each image's scan_info. This is necessary due to the tabular nature of the file, and the missing
-    guarantee that all images will provide the same columns.
-
-    Examples
-    --------
-
-    `Jupyter BIDS writing example <demo_BIDS_write_images.ipynb>`__
-
-    TODO: use nbsphinx or myst-nb to display the notebook **inline** here instead of copy pasting or moving it
-    """
-
-    session: Session
-
-    def write_image(
-        self,
-        data_type: DataType,
-        nifti_extension: FileExtension,
-        entities: EntitiesLike,
-        suffix: Optional[Suffix],
-        scan_info: Optional[ImageScanInfo],
-    ) -> Image:
-        if suffix is not None:
-            try:
-                TypeAdapter(Suffix).validate_python(suffix)
-            except PydanticError as e:
-                raise BIDSException.from_pydantic("invalid suffix", e)
-
-        image = self.session._add_image(
-            data_type, nifti_extension, Entities.from_any(entities), suffix, scan_info
-        )
-
-        session_path = self.session._get_full_path()
-
-        data_type_folder_path = session_path / f"{data_type}"
-        try:
-            os.mkdir(data_type_folder_path)
-        except FileExistsError:
-            pass
-        except FileNotFoundError:
-            raise BIDSException(
-                f"one of the parent folders of {data_type_folder_path} does not exist. Make sure to create the subject and session folders first."
-            )
-
-        return image
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        # Do not write the scans.tsv if an error occurred
-        if all(v is None for v in [exc_type, exc, tb]):
-            session_path = self.session._get_full_path()
-            scans_tsv_path = session_path / self.session._scans_tsv_file_name
-
-            rows = (
-                image.scan_info.all_fields()
-                | {
-                    "filename": str(
-                        image.get_nifti_image_path().relative_to(session_path)
-                    )
-                }
-                for image in self.session.all_images()
-                if not image.scan_info.is_empty()
-            )
-
-            # We need to write the scans.tsv at the very end of the ImagesWriter "with ...: " scope because all the images
-            # may not have the same fields, so the TSV header must be the union of all of them done once we know all
-            # the images to write
-            _write_rows_to_tsv(
-                scans_tsv_path,
-                first_column_name="filename",
-                rows=rows,
-            )
 
 
 # Populated from sub-<label>/sub-<label>_sessions.tsv

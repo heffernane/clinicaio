@@ -44,12 +44,12 @@ Writing
 This library's writing side is made to write datasets from scratch, not to edit existing ones. As such, you
 must first create a new dataset with :py:func:`~clinicaio.dataset.BIDSDataset` then you need to create the
 various subjects and sessions with :py:meth:`~clinicaio.dataset.BIDSDataset.add_subject` and
-:py:meth:`~clinicaio.subject.Subject.add_session` respectively. Once this is done the dataset can be written
-using :py:meth:`~clinicaio.dataset.BIDSDataset.write_to_folder` and :py:meth:`~clinicaio.dataset.BIDSDataset.write_root_file`
-on the dataset. The images themselves need to be added using :py:meth:`~clinicaio.session.Session.write_images` then
-:py:meth:`~clinicaio.session.ImagesWriter.write_image`: it will return the image object, which you should use to
+:py:meth:`~clinicaio.subject.Subject.add_session` respectively. The images themselves need to be added using 
+:py:meth:`~clinicaio.session.Session.write_image`: it will return the image object, which you should use to
 get its NIFTI path (and companion files paths if applicable) and actually write those files yourself, otherwise
-the BIDS will not be valid.
+the BIDS will not be valid. Once this is done the dataset can be written using
+:py:meth:`~clinicaio.dataset.BIDSDataset.write_to_folder` and :py:meth:`~clinicaio.dataset.BIDSDataset.write_root_file`
+on the dataset.
 
 Re-exports
 ----------
