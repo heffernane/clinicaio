@@ -8,12 +8,13 @@ from clinicaio.dataset_description import BIDSDatasetDescription, BIDSDatasetTyp
 
 def _setup_dataset_description(
     fakefs: FakeFilesystem, bids_path: Path
-) -> BIDSDatasetDescription:
+):
     fakefs.create_file(
         bids_path / "dataset_description.json",
         contents='{"Name": "TEST 123", "BIDSVersion": "1.11.0", "DatasetType": "derivative"}',
     )
 
+def _get_dataset_description() -> BIDSDatasetDescription:
     return BIDSDatasetDescription.new(
         BIDSDatasetType.DERIVATIVE, name="TEST 123", bids_version="1.11.0"
     )

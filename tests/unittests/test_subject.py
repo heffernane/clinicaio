@@ -3,7 +3,7 @@ from re import escape
 from typing import Iterable
 
 import pytest
-from _utils import _make_tsv, _setup_dataset_description
+from _utils import _get_dataset_description, _make_tsv, _setup_dataset_description
 from pandas import DataFrame
 from pyfakefs.fake_filesystem import FakeFilesystem
 
@@ -25,9 +25,7 @@ def bids_path():
 
 
 def test_add_session(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     assert subject.parent_dataset is dataset
@@ -50,9 +48,7 @@ def test_add_session(fakefs: FakeFilesystem):
 
 
 def test_add_session_invalid_id(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     assert subject.parent_dataset is dataset
@@ -69,9 +65,7 @@ def test_add_session_invalid_id(fakefs: FakeFilesystem):
 
 
 def test_add_session_already_existing_id(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     assert subject.parent_dataset is dataset
@@ -94,9 +88,7 @@ def test_add_session_already_existing_id(fakefs: FakeFilesystem):
 
 
 def test_add_session_none_info(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     assert subject.parent_dataset is dataset
@@ -114,9 +106,7 @@ def test_add_session_none_info(fakefs: FakeFilesystem):
 
 
 def test_add_session_provided_info(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     assert subject.parent_dataset is dataset
@@ -150,22 +140,18 @@ def test_add_session_provided_info(fakefs: FakeFilesystem):
 
 
 def test_get_full_path(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     assert subject.parent_dataset is dataset
     assert subject.id == "sub-001"
     assert subject.info.is_empty()
 
-    assert subject._get_full_path() == Path("/tmp/bids_test/sub-001")
+    assert subject._get_full_path() == Path("/does/not/exist/sub-001")
 
 
 def test_session_by_id_invalid_id(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     assert subject.parent_dataset is dataset
@@ -183,9 +169,7 @@ def test_session_by_id_invalid_id(fakefs: FakeFilesystem):
 
 
 def test_session_by_id_missing_session(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     assert subject.session_by_id("ses-001") is None
@@ -203,8 +187,7 @@ def test_session_by_id_missing_session(fakefs: FakeFilesystem):
 
 
 def test_subject_info(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     info1 = SubjectInfo(other_fields={})
@@ -245,8 +228,7 @@ def test_subject_info_invalid_session_id_field():
 
 
 def test_populate_sessions_info_from_df_missing_id_column(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
 
     with pytest.raises(
@@ -261,8 +243,7 @@ def test_populate_sessions_info_from_df_missing_id_column(fakefs: FakeFilesystem
 
 
 def test_populate_sessions_info_from_df_none_id_field(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
     session = subject.add_session("ses-001", None)
     assert session.parent_subject is subject
@@ -285,8 +266,7 @@ def test_populate_sessions_info_from_df_none_id_field(fakefs: FakeFilesystem):
 
 
 def test_populate_sessions_info_from_df_invalid_id(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
     session = subject.add_session("ses-001", None)
     assert session.parent_subject is subject
@@ -305,8 +285,7 @@ def test_populate_sessions_info_from_df_invalid_id(fakefs: FakeFilesystem):
 def test_populate_sessions_info_from_df_valid_id_missing_session(
     fakefs: FakeFilesystem,
 ):
-    bids_path = Path("/tmp/bids_test")
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
     session = subject.add_session("ses-001", None)
     assert session.parent_subject is subject

@@ -2,7 +2,7 @@ from pathlib import Path
 from re import escape
 
 import pytest
-from _utils import _make_tsv, _setup_dataset_description
+from _utils import _get_dataset_description, _make_tsv, _setup_dataset_description
 from packaging.version import Version
 from pyfakefs.fake_filesystem import FakeFilesystem
 
@@ -188,7 +188,8 @@ def test_read_participants_tsv_na_none_participant_id(
 
 
 def test_read_dataset_subject_structure(fakefs: FakeFilesystem, bids_path: Path):
-    desc = _setup_dataset_description(fakefs, bids_path)
+    _setup_dataset_description(fakefs, bids_path)
+    desc = _get_dataset_description()
     fakefs.create_file(bids_path / "README")
     fakefs.create_dir(bids_path / "sub-001")
     fakefs.create_dir(bids_path / "sub-01")
@@ -289,9 +290,9 @@ def test_read_dataset_propagate_sessions_exceptions(
         )
 
 
-def test_add_subject_duplicate_id(fakefs: FakeFilesystem, bids_path: Path):
+def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
     dataset = BIDSDataset(
-        Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path)
+        Path("/does/not/exist"), _get_dataset_description()
     )
 
     assert dataset.subjects_count() == 0
@@ -315,9 +316,9 @@ def test_add_subject_duplicate_id(fakefs: FakeFilesystem, bids_path: Path):
         dataset.add_subject("sub-001", None)
 
 
-def test_add_subject_none_info(fakefs: FakeFilesystem, bids_path: Path):
+def test_add_subject_none_info(fakefs: FakeFilesystem):
     dataset = BIDSDataset(
-        Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path)
+        Path("/does/not/exist"), _get_dataset_description()
     )
 
     subject = dataset.add_subject("sub-001", None)
@@ -325,9 +326,9 @@ def test_add_subject_none_info(fakefs: FakeFilesystem, bids_path: Path):
     assert subject.info.is_empty()
 
 
-def test_add_subject_provided_info(fakefs: FakeFilesystem, bids_path: Path):
+def test_add_subject_provided_info(fakefs: FakeFilesystem):
     dataset = BIDSDataset(
-        Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path)
+        Path("/does/not/exist"), _get_dataset_description()
     )
 
     dct = {"a": "abc", "bcd": "a"}
@@ -336,9 +337,9 @@ def test_add_subject_provided_info(fakefs: FakeFilesystem, bids_path: Path):
     assert subject.info == SubjectInfo.from_fields(dct)
 
 
-def test_add_subject_invalid_id(fakefs: FakeFilesystem, bids_path: Path):
+def test_add_subject_invalid_id(fakefs: FakeFilesystem):
     dataset = BIDSDataset(
-        Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path)
+        Path("/does/not/exist"), _get_dataset_description()
     )
 
     with pytest.raises(
@@ -350,9 +351,9 @@ def test_add_subject_invalid_id(fakefs: FakeFilesystem, bids_path: Path):
         dataset.add_subject("sub-é", None)
 
 
-def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem, bids_path: Path):
+def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem):
     dataset = BIDSDataset(
-        Path("/does/not/exist"), _setup_dataset_description(fakefs, bids_path)
+        Path("/does/not/exist"), _get_dataset_description()
     )
 
     with pytest.raises(
@@ -367,7 +368,7 @@ def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem, bids_path: P
 
 def test_write_root_file_already_existing(fakefs: FakeFilesystem, bids_path: Path):
     fakefs.create_file(bids_path / "README")
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(bids_path, _get_dataset_description())
 
     with pytest.raises(
         BIDSException,
@@ -382,7 +383,7 @@ def test_write_root_file_already_existing_directory(
 ):
     # Note that here a directory is created instead of a file
     fakefs.create_dir(bids_path / "README")
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(bids_path, _get_dataset_description())
 
     with pytest.raises(
         BIDSException,
@@ -393,13 +394,14 @@ def test_write_root_file_already_existing_directory(
 
 
 def test_write_root_file_text_mode(fakefs: FakeFilesystem, bids_path: Path):
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(bids_path, _get_dataset_description())
 
-    with dataset.write_root_file("README", write_binary=False) as f:
+    dataset.write_to_folder(readme="readme test")
+    with dataset.write_root_file("FOO", write_binary=False) as f:
         f.write("foo")
         f.flush()
-        readme_file = fakefs.get_object(bids_path / "README")
-        assert readme_file.contents == "foo"
+        file = fakefs.get_object(bids_path / "FOO")
+        assert file.contents == "foo"
 
         with pytest.raises(
             TypeError, match=escape("write() argument must be str, not bytes")
@@ -408,13 +410,14 @@ def test_write_root_file_text_mode(fakefs: FakeFilesystem, bids_path: Path):
 
 
 def test_write_root_file_binary_mode(fakefs: FakeFilesystem, bids_path: Path):
-    dataset = BIDSDataset(bids_path, _setup_dataset_description(fakefs, bids_path))
+    dataset = BIDSDataset(bids_path, _get_dataset_description())
 
-    with dataset.write_root_file("README", write_binary=True) as f:
+    dataset.write_to_folder(readme="readme test")
+    with dataset.write_root_file("FOO", write_binary=True) as f:
         f.write(b"foo")
         f.flush()
-        readme_file = fakefs.get_object(bids_path / "README")
-        assert readme_file.byte_contents == b"foo"
+        file = fakefs.get_object(bids_path / "FOO")
+        assert file.byte_contents == b"foo"
 
         with pytest.raises(
             TypeError, match=escape("a bytes-like object is required, not 'str'")
