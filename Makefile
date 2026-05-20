@@ -26,4 +26,4 @@ install.doc: check.lock
 
 .PHONY: notebooks
 notebooks: install
-	@$(POETRY) run jupyter notebook notebooks/
+	@$(POETRY) run jupyter lab notebooks/
