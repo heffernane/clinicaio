@@ -59,11 +59,7 @@ class Session:
         # *_scans.tsv writing
         rows = (
             image.scan_info.all_fields()
-            | {
-                "filename": str(
-                    image.get_nifti_image_path().relative_to(session_path)
-                )
-            }
+            | {"filename": str(image.get_nifti_image_path().relative_to(session_path))}
             for image in self.all_images()
             if not image.scan_info.is_empty()
         )
@@ -101,7 +97,7 @@ class Session:
         self._images[data_type].append(image)
 
         return image
-    
+
     def write_image(
         self,
         data_type: DataType,
@@ -140,7 +136,7 @@ class Session:
 
         data_type_folder_path = self._get_full_path() / f"{data_type}"
         os.makedirs(data_type_folder_path, exist_ok=True)
-        
+
         return image
 
     @cached_property

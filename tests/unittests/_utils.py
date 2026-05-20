@@ -6,13 +6,12 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 from clinicaio.dataset_description import BIDSDatasetDescription, BIDSDatasetType
 
 
-def _setup_dataset_description(
-    fakefs: FakeFilesystem, bids_path: Path
-):
+def _setup_dataset_description(fakefs: FakeFilesystem, bids_path: Path):
     fakefs.create_file(
         bids_path / "dataset_description.json",
         contents='{"Name": "TEST 123", "BIDSVersion": "1.11.0", "DatasetType": "derivative"}',
     )
+
 
 def _get_dataset_description() -> BIDSDatasetDescription:
     return BIDSDatasetDescription.new(

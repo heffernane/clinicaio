@@ -291,9 +291,7 @@ def test_read_dataset_propagate_sessions_exceptions(
 
 
 def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(
-        Path("/does/not/exist"), _get_dataset_description()
-    )
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
     assert dataset.subjects_count() == 0
     assert list(dataset.all_subjects()) == []
@@ -317,9 +315,7 @@ def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
 
 
 def test_add_subject_none_info(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(
-        Path("/does/not/exist"), _get_dataset_description()
-    )
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
     subject = dataset.add_subject("sub-001", None)
     assert subject.info.all_fields() == {}
@@ -327,9 +323,7 @@ def test_add_subject_none_info(fakefs: FakeFilesystem):
 
 
 def test_add_subject_provided_info(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(
-        Path("/does/not/exist"), _get_dataset_description()
-    )
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
     dct = {"a": "abc", "bcd": "a"}
     subject = dataset.add_subject("sub-001", SubjectInfo.from_fields(dct))
@@ -338,9 +332,7 @@ def test_add_subject_provided_info(fakefs: FakeFilesystem):
 
 
 def test_add_subject_invalid_id(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(
-        Path("/does/not/exist"), _get_dataset_description()
-    )
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
     with pytest.raises(
         BIDSException,
@@ -352,9 +344,7 @@ def test_add_subject_invalid_id(fakefs: FakeFilesystem):
 
 
 def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem):
-    dataset = BIDSDataset(
-        Path("/does/not/exist"), _get_dataset_description()
-    )
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
     with pytest.raises(
         BIDSException,
