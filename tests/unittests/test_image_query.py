@@ -281,3 +281,13 @@ def test_suffix_str():
     query = ImageQuery(suffix=suffix)
     assert query.suffix == suffix
     assert str(query.suffix) == suffix
+
+
+def test_suffix_wildcard():
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "invalid suffix (magnitude*): String should match pattern '^[a-zA-Z0-9]+$'"
+        ),
+    ):
+        ImageQuery(suffix="magnitude*")
