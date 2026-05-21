@@ -4,22 +4,25 @@ import os
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Iterable, Optional
 
 from pandas import DataFrame
 from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticError
 
-from . import image
 from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
 from .session import Session, SessionInfo
 from .types import BIDSException, SessionId, SubjectId
+
+if TYPE_CHECKING:
+    from .dataset import BIDSDataset
+    from .image import Image
 
 
 # populated from sub-* folders
 @dataclass
 class Subject:
-    parent_dataset: dataset.BIDSDataset = field(repr=False, compare=False)
+    parent_dataset: BIDSDataset = field(repr=False, compare=False)
 
     id: SubjectId
     # https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file
@@ -64,7 +67,7 @@ class Subject:
 
         return self._sessions.get(id)
 
-    def all_images(self) -> Iterable[image.Image]:
+    def all_images(self) -> Iterable[Image]:
         for session in self.all_sessions():
             yield from session.all_images()
 
@@ -213,7 +216,3 @@ class SubjectInfo:
 
     def is_empty(self) -> bool:
         return len(self._other_fields) == 0
-
-
-# Necessary to appear last due to parent dataset field which creates cyclic import otherwise
-from . import dataset  # noqa: E402

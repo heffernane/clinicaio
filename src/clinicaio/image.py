@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticError
@@ -11,10 +11,13 @@ from pydantic import ValidationError as PydanticError
 from .entities import Entities
 from .types import BIDSException, DataType, FileExtension, Suffix
 
+if TYPE_CHECKING:
+    from .session import Session
+
 
 @dataclass
 class Image:
-    parent_session: session.Session = field(repr=False, compare=False)
+    parent_session: Session = field(repr=False, compare=False)
     data_type: DataType
 
     nifti_extension: FileExtension
@@ -151,7 +154,3 @@ class ImageScanInfo:
 
     def is_empty(self) -> bool:
         return len(self.other_fields) == 0
-
-
-# Necessary to appear last due to parent session field which creates cyclic import otherwise
-from . import session  # noqa: E402

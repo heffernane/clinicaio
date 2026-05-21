@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Iterable, Optional
 
 from pandas import DataFrame
 from pydantic import TypeAdapter
@@ -15,10 +15,13 @@ from .entities import Entities, EntitiesLike
 from .image import Image, ImageScanInfo
 from .types import BIDSException, DataType, FileExtension, SessionId, Suffix
 
+if TYPE_CHECKING:
+    from .subject import Subject
+
 
 @dataclass
 class Session:
-    parent_subject: subject.Subject = field(repr=False, compare=False)
+    parent_subject: Subject = field(repr=False, compare=False)
 
     id: SessionId
     info: SessionInfo
@@ -388,7 +391,3 @@ class SessionInfo:
         return len(self.other_fields) == 0 and all(
             v is None for v in [self.acquisition_time, self.pathology]
         )
-
-
-# Necessary to appear last due to parent subject field which creates cyclic import otherwise
-from . import subject  # noqa: E402
