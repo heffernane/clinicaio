@@ -32,6 +32,7 @@ class ImageQuery:
             as a fully-formed BIDS entities string ``"<key1>-<value1>_..._<keyN>-<valueN>"``.
     suffix :
             The suffix to specifically look for in the images. If ``None``, all of them are kept.
+            This is a wildcard pattern using the syntax supported by :py:func:`fnmatch.fnmatchcase`.
 
     Examples
     --------
@@ -64,7 +65,7 @@ class ImageQuery:
     sessions: set[SessionId]
     data_type: Optional[DataType]
     entities: Entities
-    suffix: Optional[Suffix]
+    suffix: Optional[str]
 
     def __init__(
         self,
@@ -77,7 +78,7 @@ class ImageQuery:
         # or ["trc-11CPIB", "run-1"]
         entities: EntitiesLike = None,
         # +/- modality
-        suffix: Optional[Suffix] = None,
+        suffix: Optional[str] = None,
     ):
         def validate_str(str_type: Any, s: str, err_prefix: str) -> Any:
             try:
@@ -108,6 +109,4 @@ class ImageQuery:
 
         self.entities = Entities.from_any(entities)
 
-        self.suffix = (
-            None if suffix is None else validate_str(Suffix, suffix, "invalid suffix")
-        )
+        self.suffix = suffix

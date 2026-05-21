@@ -9,11 +9,9 @@ from clinicaio.image_query import ImageQuery
 from clinicaio.types import DataType
 
 
-# NOTE: for the purpose of this module, the whole dataset and filesystem are assumed
-# to be written once as part of the later fixture, but to never be touched again after.
-@pytest.fixture(scope="module")
-def fakefs(fs_module):
-    yield fs_module
+@pytest.fixture
+def fakefs(fs):
+    yield fs
 
 
 all_paths = frozenset(
@@ -70,9 +68,12 @@ all_paths = frozenset(
 )
 
 
+# NOTE: for the purpose of this module, the whole dataset and filesystem are assumed
+# to be written once as part of this fixture, but to never be touched again after.
 @pytest.fixture(scope="module")
-def dataset(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
+def dataset(fs_module: FakeFilesystem):
+    fakefs = fs_module
+    bids_path = Path("/tmp/bids_test_all_queries")
 
     _setup_dataset_description(fakefs, bids_path)
 
@@ -260,14 +261,12 @@ def test_query_images(
 ):
     assert len(image_paths) == paths_count
 
-    bids_path = Path("/tmp/bids_test")
-
     queried_paths = [
-        str(image.get_nifti_image_path().relative_to(bids_path))
+        str(image.get_nifti_image_path().relative_to(dataset._bids_path))
         for image in dataset.query_images(query)
     ]
     assert queried_paths == [
-        str(nifti_path.relative_to(bids_path))
+        str(nifti_path.relative_to(dataset._bids_path))
         for nifti_path in dataset.query_images_nifti_paths(query)
     ]
     images_count = len(queried_paths)
@@ -277,3 +276,60 @@ def test_query_images(
     # hence the length check.
     assert len(queried_paths) == images_count
     assert queried_paths == image_paths
+
+
+def test_query_suffix_wildcard(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+    fakefs.create_file(
+        bids_path
+        / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_trc-18FFDG_magnitude1.nii.gz"
+    )
+    fakefs.create_file(
+        bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_trc-11CPIB_magnitude2.nii"
+    )
+    fakefs.create_file(
+        bids_path
+        / "sub-1/ses-B/anat/sub-1_ses-B_task-rest_trc-18FFDG_magnitude3.nii.gz"
+    )
+    fakefs.create_file(
+        bids_path
+        / "sub-1/ses-B/anat/sub-1_ses-B_task-rest_trc-18FFDG_magnitude8238.nii"
+    )
+    fakefs.create_file(
+        bids_path / "sub-1/ses-B/anat/sub-1_ses-B_task-rest_trc-18FFDG_magnitude.nii.gz"
+    )
+    # all those next ones are not supposed to be found by the image query
+    fakefs.create_file(
+        bids_path
+        / "sub-1/ses-B/anat/sub-1_ses-B_task-rest_trc-18FFDG_Magnitude7.nii.gz"
+    )
+    fakefs.create_file(
+        bids_path
+        / "sub-1/ses-B/anat/sub-1_ses-B_task-rest_trc-18FFDG_Amagnitude7.nii.gz"
+    )
+    fakefs.create_file(
+        bids_path / "sub-1/ses-B/anat/sub-1_ses-B_task-rest_trc-18FFDG_magnitud.nii.gz"
+    )
+    fakefs.create_file(
+        bids_path / "sub-2/ses-A/anat/sub-2_ses-A_task-rest_trc-11CPIB_magnitude4.nii"
+    )
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
+    )
+
+    expected_paths = [
+        "sub-1/ses-A/anat/sub-1_ses-A_task-rest_trc-18FFDG_magnitude1.nii.gz",
+        "sub-1/ses-A/anat/sub-1_ses-A_task-rest_trc-11CPIB_magnitude2.nii",
+        "sub-1/ses-B/anat/sub-1_ses-B_task-rest_trc-18FFDG_magnitude3.nii.gz",
+        "sub-1/ses-B/anat/sub-1_ses-B_task-rest_trc-18FFDG_magnitude8238.nii",
+        "sub-1/ses-B/anat/sub-1_ses-B_task-rest_trc-18FFDG_magnitude.nii.gz",
+    ]
+    image_paths = dataset.query_images_nifti_paths(
+        ImageQuery(subjects=["sub-1"], suffix="magnitude*")
+    )
+    assert sorted([str(path.relative_to(bids_path)) for path in image_paths]) == sorted(
+        expected_paths
+    )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from fnmatch import fnmatchcase
 from functools import cached_property
 from pathlib import Path
 from typing import IO, Any, Callable, Iterable, Optional
@@ -343,8 +344,11 @@ class BIDSDataset:
                 )
 
                 for image in image_per_data_type:
-                    if (query.suffix is not None) and (image.suffix != query.suffix):
-                        continue
+                    if query.suffix is not None:
+                        if (image.suffix is None) or (
+                            not fnmatchcase(image.suffix, query.suffix)
+                        ):
+                            continue
 
                     if len(query.entities) > 0 and (
                         not image.entities.contains_all(query.entities)
