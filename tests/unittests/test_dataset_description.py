@@ -21,6 +21,14 @@ def new_desc(json_str: str) -> BIDSDatasetDescription:
 def test_desc_valid_json():
     new_desc('{"Name": "TEST NAME", "BIDSVersion": "1.10.0", "DatasetType": "raw"}')
 
+def test_extra_json_field():
+    desc1 = new_desc('{"Name": "TEST NAME", "BIDSVersion": "1.10.0", "DatasetType": "raw", "CAPSVersion": "1.0.0"}')
+    desc2 = new_desc('{"Name": "TEST NAME", "BIDSVersion": "1.10.0", "DatasetType": "raw"}')
+
+    assert desc1 == desc2
+    with pytest.raises(AttributeError):
+        desc1.caps_version # type: ignore
+
 
 def test_desc_invalid_json():
     with pytest.raises(

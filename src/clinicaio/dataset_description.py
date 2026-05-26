@@ -27,8 +27,7 @@ class BIDSDatasetDescription(BaseModel):
         validate_assignment=True,
         validate_default=True,
         arbitrary_types_allowed=True,
-        # FIXME: restriction should probably be lifted at some point
-        extra="forbid",
+        extra="ignore",
         strict=True,
     )
 
