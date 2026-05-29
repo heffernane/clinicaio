@@ -29,7 +29,7 @@ def test_ids_missing_prefix(id_type: type, id: str, err_msg: str):
         try:
             TypeAdapter(id_type).validate_python(id)
         except PydanticError as e:
-            raise BIDSException.from_pydantic("bids", e)
+            raise BIDSException._from_pydantic("bids", e)
 
 
 @pytest.mark.parametrize(
@@ -47,7 +47,7 @@ def test_ids_prefix_with_empty_label(id_type: type, id: str, err_msg: str):
         try:
             TypeAdapter(id_type).validate_python(id)
         except PydanticError as e:
-            raise BIDSException.from_pydantic("bids", e)
+            raise BIDSException._from_pydantic("bids", e)
 
 
 @pytest.mark.parametrize(
@@ -65,7 +65,7 @@ def test_ids_non_alnum_chars(id_type: type, id: str, err_msg: str):
         try:
             TypeAdapter(id_type).validate_python(id)
         except PydanticError as e:
-            raise BIDSException.from_pydantic("bids", e)
+            raise BIDSException._from_pydantic("bids", e)
 
 
 @pytest.mark.parametrize(

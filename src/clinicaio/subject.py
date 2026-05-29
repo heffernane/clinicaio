@@ -41,7 +41,7 @@ class Subject:
         try:
             TypeAdapter(SessionId).validate_python(id)
         except PydanticError as e:
-            raise BIDSException.from_pydantic("invalid session ID", e)
+            raise BIDSException._from_pydantic("invalid session ID", e)
 
         if id in self._sessions:
             raise BIDSException(
@@ -77,7 +77,7 @@ class Subject:
         try:
             TypeAdapter(SessionId).validate_python(id)
         except PydanticError as e:
-            raise BIDSException.from_pydantic("invalid session ID", e)
+            raise BIDSException._from_pydantic("invalid session ID", e)
 
         return self._sessions.get(id)
 
@@ -137,7 +137,7 @@ class Subject:
             try:
                 session_id = TypeAdapter(SessionId).validate_python(str(session_id))
             except PydanticError as e:
-                raise BIDSException.from_pydantic(
+                raise BIDSException._from_pydantic(
                     f"invalid session ID {session_id} in dataframe", e
                 )
 
@@ -185,7 +185,7 @@ class Subject:
             try:
                 session_id = TypeAdapter(SessionId).validate_python(child.name)
             except PydanticError as e:
-                raise BIDSException.from_pydantic(
+                raise BIDSException._from_pydantic(
                     f"Found invalid session ID {child.name}", e
                 )
 

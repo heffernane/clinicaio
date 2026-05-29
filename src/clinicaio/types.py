@@ -64,7 +64,7 @@ class Label:
 
 class BIDSException(Exception):
     @classmethod
-    def from_pydantic(cls, prefix: str, err: PydanticError) -> BIDSException:
+    def _from_pydantic(cls, prefix: str, err: PydanticError) -> BIDSException:
         last_err = err.errors()[0]
         err_loc = f'field "{last_err["loc"][0]}": ' if len(last_err["loc"]) > 0 else ""
         pydantic_msg = f"{err_loc}{last_err['msg']}"

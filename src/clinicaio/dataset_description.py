@@ -60,7 +60,7 @@ class BIDSDatasetDescription(BaseModel):
                 by_name=True,
             )
         except PydanticError as e:
-            raise BIDSException.from_pydantic(
+            raise BIDSException._from_pydantic(
                 f"could not create new dataset description", e
             )
 
@@ -96,7 +96,7 @@ class BIDSDatasetDescription(BaseModel):
         try:
             return BIDSDatasetDescription.model_validate_json(desc_json)
         except PydanticError as e:
-            raise BIDSException.from_pydantic(
+            raise BIDSException._from_pydantic(
                 f"could not validate BIDS dataset description from JSON {desc_json}", e
             )
         except TypeError as e:

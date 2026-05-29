@@ -76,7 +76,7 @@ class Image:
             try:
                 suffix = TypeAdapter(Suffix).validate_python(entities[-1])
             except PydanticError as e:
-                raise BIDSException.from_pydantic(
+                raise BIDSException._from_pydantic(
                     f"found invalid suffix label for image filename {filename_after_sub_ses}",
                     e,
                 )

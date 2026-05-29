@@ -84,7 +84,7 @@ class ImageQuery:
             try:
                 return TypeAdapter(str_type).validate_python(s)
             except PydanticError as e:
-                raise BIDSException.from_pydantic(f"{err_prefix} ({s})", e)
+                raise BIDSException._from_pydantic(f"{err_prefix} ({s})", e)
 
         self.subjects = (
             set()

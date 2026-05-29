@@ -46,7 +46,7 @@ class BIDSDataset:
         try:
             TypeAdapter(SubjectId).validate_python(id)
         except PydanticError as e:
-            raise BIDSException.from_pydantic(f"invalid subject ID {id}", e)
+            raise BIDSException._from_pydantic(f"invalid subject ID {id}", e)
 
         return self._subjects.get(id)
 
@@ -100,7 +100,7 @@ class BIDSDataset:
             try:
                 subject_id = TypeAdapter(SubjectId).validate_python(str(subject_id))
             except PydanticError as e:
-                raise BIDSException.from_pydantic(
+                raise BIDSException._from_pydantic(
                     f"found invalid subject ID {subject_id} in dataframe", e
                 )
 
@@ -189,7 +189,7 @@ class BIDSDataset:
             try:
                 subject_id = TypeAdapter(SubjectId).validate_python(bids_child.name)
             except PydanticError as e:
-                raise BIDSException.from_pydantic(
+                raise BIDSException._from_pydantic(
                     f"Found invalid subject/subject ID {bids_child.name}", e
                 )
 
@@ -217,7 +217,7 @@ class BIDSDataset:
         try:
             TypeAdapter(SubjectId).validate_python(id)
         except PydanticError as e:
-            raise BIDSException.from_pydantic(f"invalid subject ID {id}", e)
+            raise BIDSException._from_pydantic(f"invalid subject ID {id}", e)
 
         if id in self._subjects:
             raise BIDSException(

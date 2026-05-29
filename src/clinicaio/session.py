@@ -134,7 +134,7 @@ class Session:
             try:
                 TypeAdapter(Suffix).validate_python(suffix)
             except PydanticError as e:
-                raise BIDSException.from_pydantic("invalid suffix", e)
+                raise BIDSException._from_pydantic("invalid suffix", e)
 
         image = self._add_image(
             data_type, nifti_extension, Entities.from_any(entities), suffix, scan_info
