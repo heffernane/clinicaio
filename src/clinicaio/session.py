@@ -23,12 +23,15 @@ if TYPE_CHECKING:
 class Session:
     parent_subject: Subject = field(repr=False, compare=False)
 
-    id: SessionId
+    id: Optional[SessionId]
     info: SessionInfo
     _images: dict[DataType, list[Image]] = field(default_factory=lambda: {})
 
     def _get_full_path(self) -> Path:
-        return self.parent_subject._get_full_path() / f"{self.id}"
+        if self.id is None:
+            return self.parent_subject._get_full_path()
+        else:
+            return self.parent_subject._get_full_path() / f"{self.id}"
 
     def images_by_data_type(self, data_type: str | DataType) -> Iterable[Image]:
         return self._images.get(DataType(data_type)) or []
@@ -143,8 +146,14 @@ class Session:
         return image
 
     @cached_property
+    def _sub_ses_prefix(self) -> str:
+        ses_id = "" if self.id is None else f"_{self.id}"
+
+        return f"{self.parent_subject.id}{ses_id}_"
+
+    @cached_property
     def _scans_tsv_file_name(self) -> str:
-        return f"{self.parent_subject.id}_{self.id}_scans.tsv"
+        return f"{self._sub_ses_prefix}scans.tsv"
 
     def populate_image_scans_info_from_df(self, scans_tsv_df: DataFrame):
         """
@@ -164,8 +173,6 @@ class Session:
         """
         if "filename" not in scans_tsv_df.columns:
             raise BIDSException(f"dataframe did not have required filename column")
-
-        sub_ses_prefix = f"{self.parent_subject.id}_{self.id}_"
 
         infos: list[dict[str, Any]] = scans_tsv_df.to_dict(orient="records")  # type: ignore
         for info in infos:
@@ -188,12 +195,12 @@ class Session:
                     f"expected valid data type as first folder of filename {image_filename} in dataframe"
                 )
 
-            if not image_basename.startswith(sub_ses_prefix):
+            if not image_basename.startswith(self._sub_ses_prefix):
                 raise BIDSException(
-                    f"expected image basename {image_basename} of filename {image_filename} in dataframe to have prefix {sub_ses_prefix}"
+                    f"expected image basename {image_basename} of filename {image_filename} in dataframe to have prefix {self._sub_ses_prefix}"
                 )
 
-            after_sub_ses = image_basename.removeprefix(sub_ses_prefix)
+            after_sub_ses = image_basename.removeprefix(self._sub_ses_prefix)
             try:
                 filename_components = Image._parse_filename_components(after_sub_ses)
             except BIDSException as e:
@@ -265,14 +272,13 @@ class Session:
             maybe_duplicated_images: list[Image] = []
 
             for child_image in os.scandir(child.path):
-                sub_ses_prefix = f"{self.parent_subject.id}_{self.id}_"
-                if not child_image.name.startswith(sub_ses_prefix):
+                if not child_image.name.startswith(self._sub_ses_prefix):
                     raise BIDSException(
                         f"expected {data_type}/{child_image.name} "
-                        f"filename to start with {sub_ses_prefix} due to its placement in the BIDS directory hierarchy"
+                        f"filename to start with {self._sub_ses_prefix} due to its placement in the BIDS directory hierarchy"
                     )
 
-                after_sub_ses = child_image.name.removeprefix(sub_ses_prefix)
+                after_sub_ses = child_image.name.removeprefix(self._sub_ses_prefix)
 
                 try:
                     filename_components = Image._parse_filename_components(
@@ -380,6 +386,10 @@ class SessionInfo:
         return fields
 
     def all_fields_with_id(self, session: Session) -> dict[str, Any]:
+        assert session.id is not None, (
+            "can not attach ID field to info for implicit session without ID"
+        )
+
         return self.all_fields() | {"session_id": session.id}
 
     # It's preferable to avoid having two None-like SessionInfo: the real None stored in

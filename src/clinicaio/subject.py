@@ -28,12 +28,16 @@ class Subject:
     # https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file
     # from participants.tsv, matched by participant_id, if available (all Optional[Type] = None, if line missing or n/a value)
     info: SubjectInfo
-    _sessions: dict[SessionId, Session] = field(default_factory=lambda: {})
+    _sessions: Session | dict[SessionId, Session] = field(default_factory=lambda: {})
 
     def _get_full_path(self) -> Path:
         return self.parent_dataset._get_full_path() / f"{self.id}"
 
     def add_session(self, id: SessionId, info: Optional[SessionInfo]) -> Session:
+        assert not isinstance(self._sessions, Session), (
+            "Adding a named/ID-ed session to a subject that only has an implicit one (sub-<label>/<data_type>/... instead of sub-<label>/ses-<label>/<data type>) is not supported"
+        )
+
         try:
             TypeAdapter(SessionId).validate_python(id)
         except PydanticError as e:
@@ -54,12 +58,22 @@ class Subject:
         return session
 
     def all_sessions(self) -> Iterable[Session]:
-        return self._sessions.values()
+        if isinstance(self._sessions, Session):
+            return [self._sessions]
+        else:
+            return self._sessions.values()
 
     def sessions_count(self) -> int:
-        return len(self._sessions)
+        if isinstance(self._sessions, Session):
+            return 1
+        else:
+            return len(self._sessions)
 
     def session_by_id(self, id: SessionId) -> Optional[Session]:
+        assert not isinstance(self._sessions, Session), (
+            "can't get session by ID when this subject only has a single session without an ID"
+        )
+
         try:
             TypeAdapter(SessionId).validate_python(id)
         except PydanticError as e:
@@ -82,15 +96,16 @@ class Subject:
         for session in self.all_sessions():
             session._write_to_folder()
 
-        _write_rows_to_tsv(
-            subject_path / self._sessions_tsv_file_name,
-            first_column_name="session_id",
-            rows=(
-                session.info.all_fields_with_id(session)
-                for session in self.all_sessions()
-                if not session.info.is_empty()
-            ),
-        )
+        if isinstance(self._sessions, dict):
+            _write_rows_to_tsv(
+                subject_path / self._sessions_tsv_file_name,
+                first_column_name="session_id",
+                rows=(
+                    session.info.all_fields_with_id(session)
+                    for session in self.all_sessions()
+                    if not session.info.is_empty()
+                ),
+            )
 
     def populate_sessions_info_from_df(self, sessions_tsv_df: DataFrame):
         """
@@ -106,6 +121,10 @@ class Subject:
         for your use case when you are writing a new BIDS dataset. Filling-in
         the information directly from :py:meth:`add_session` should be favored.
         """
+
+        assert not isinstance(self._sessions, Session), (
+            "subject only has a single session without ID so populating session information makes no sense"
+        )
 
         if "session_id" not in sessions_tsv_df.columns:
             raise BIDSException(f"dataframe did not have required session_id column")
@@ -179,8 +198,25 @@ class Subject:
                     f"got exception while adding session {session_id} and populating its images: {e}"
                 )
 
-        if sessions_info:
-            self._populate_sessions_info_from_tsv()
+        assert isinstance(self._sessions, dict)
+        if len(self._sessions) == 0:
+            try:
+                session = Session(
+                    parent_subject=self,
+                    id=None,
+                    info=SessionInfo.from_fields({}),
+                )
+                session._populate_images_from_folder(image_scans_info=image_scans_info)
+            except Exception as e:
+                raise BIDSException(
+                    f"got exception while adding session without ID/dedicated folder and populating its images: {e}"
+                )
+
+            if session.images_count() > 0:
+                self._sessions = session
+        else:
+            if sessions_info:
+                self._populate_sessions_info_from_tsv()
 
         return unhandled_entries
 

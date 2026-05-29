@@ -95,14 +95,16 @@ class Image:
     def _get_image_base_full_path(
         self,
     ) -> Path:
-        ses_id = self.parent_session.id
-        sub_id = self.parent_session.parent_subject.id
-        entities = "" if len(self.entities) == 0 else f"_{self.entities}"
-        suffix = "" if self.suffix is None else f"_{self.suffix}"
+        entities = "" if len(self.entities) == 0 else f"{self.entities}"
+        suffix = "" if self.suffix is None else f"{self.suffix}"
 
         return (
             self.parent_session._get_full_path()
-            / f"{self.data_type}/{sub_id}_{ses_id}{entities}{suffix}"
+            / f"{self.data_type}"
+            / (
+                self.parent_session._sub_ses_prefix
+                + "_".join(s for s in [entities, suffix] if len(s) != 0)
+            )
         )
 
     def get_nifti_image_path(self) -> Path:
