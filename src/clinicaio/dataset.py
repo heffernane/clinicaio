@@ -147,11 +147,11 @@ class BIDSDataset:
         bids_dir :
                 The directory where the BIDS dataset exists
         subjects_info :
-                Whether to fill out subject information from the ``participants.tsv`` file
+                Whether to fill out :py:class:`subject information <clinicaio.subject.SubjectInfo>` from the ``participants.tsv`` file
         sessions_info :
-                Whether to fill out session information from the ``*_sessions.tsv`` files
+                Whether to fill out :py:class:`session information <clinicaio.session.SessionInfo>` from the ``*_sessions.tsv`` files
         image_scans_info :
-                Whether to fill out image scan information from the ``*_scans.tsv`` files
+                Whether to fill out :py:class:`image scan information <clinicaio.image.ImageScanInfo>` from the ``*_scans.tsv`` files
 
         Raises
         ------
@@ -361,6 +361,10 @@ class BIDSDataset:
         """
         Convenience function that only returns the NIFTI image paths instead of the images themselves.
         See :py:meth:`query_images`.
+
+        See also
+        --------
+        * :py:meth:`Image.get_nifti_image_path() <clinicaio.image.Image.get_nifti_image_path>`
         """
         return (image.get_nifti_image_path() for image in self.query_images(query))
 
@@ -370,6 +374,10 @@ class BIDSDataset:
         """
         Convenience function that only returns the companion image paths with the given file extension
         instead of the images themselves. See :py:meth:`query_images`.
+
+        See also
+        --------
+        * :py:meth:`Image.get_image_companion_file_path() <clinicaio.image.Image.get_image_companion_file_path>`
         """
         return (
             image.get_image_companion_file_path(extension)

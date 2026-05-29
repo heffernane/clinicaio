@@ -70,6 +70,11 @@ class Subject:
             return len(self._sessions)
 
     def session_by_id(self, id: SessionId) -> Optional[Session]:
+        """
+        Get this subject's session with the given ID. It is a programmer error to call this method
+        if this subject only has an implicit session without an ID.
+        """
+
         assert not isinstance(self._sessions, Session), (
             "can't get session by ID when this subject only has a single session without an ID"
         )

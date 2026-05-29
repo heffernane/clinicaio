@@ -114,7 +114,7 @@ class Session:
         scan_info: Optional[ImageScanInfo],
     ) -> Image:
         """
-        Adds the image created with the given properties to the session, and creates
+        Adds to the session the image created with the given properties, and creates
         its parent folders.
 
         Returns
