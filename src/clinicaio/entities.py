@@ -53,6 +53,7 @@ class Entities:
         -------
         The created entities
         """
+
         def type_or_type_from_val(v, typ):
             return v if isinstance(v, typ) else typ(v)
 
