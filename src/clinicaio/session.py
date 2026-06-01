@@ -157,12 +157,12 @@ class Session:
 
     def populate_image_scans_info_from_df(self, scans_tsv_df: DataFrame):
         """
-        Populates the images informations from the given dataframe.
+        Populates the images information from the given dataframe.
         The dataframe must have a ``filename`` column which corresponds to
         the relative path of the image file relative to its parent session/this session,
         e.g. ``<data type>/sub-..._ses-..._<.....>.nii.gz``. The corresponding
         Image must already be present in this session. The other columns
-        will be used as informations for the image at hand: they will not be
+        will be used as information for the image at hand: they will not be
         merged with the existing ones, instead they'll be replaced entirely.
 
         Warnings

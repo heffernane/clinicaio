@@ -79,7 +79,7 @@ def test_ids_hash_eq(id_class: type, prefix: str):
     id1 = TypeAdapter(id_class).validate_python(f"{prefix}01")
     id2 = TypeAdapter(id_class).validate_python(f"{prefix}02")
     id1_same = TypeAdapter(id_class).validate_python(f"{prefix}01")
-    # The label part of <prefix><label> is not treated particularily with regards
+    # The label part of <prefix><label> is not treated particularly with regards
     # to fully integer labels.
     id1_same_but_different = TypeAdapter(id_class).validate_python(f"{prefix}1")
 

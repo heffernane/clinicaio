@@ -73,10 +73,10 @@ class BIDSDataset:
 
     def populate_subjects_info_from_df(self, participants_tsv_df: DataFrame):
         """
-        Populates the subjects informations from the given dataframe.
+        Populates the subjects information from the given dataframe.
         The dataframe must have a ``participant_id`` column which corresponds to
         a subject's ID that's already present in this dataset. The other columns
-        will be used as informations for the subject at hand: they will not be
+        will be used as information for the subject at hand: they will not be
         merged with the existing ones, instead they'll be replaced entirely.
 
         Warnings
@@ -137,9 +137,9 @@ class BIDSDataset:
         """
         Read a BIDS dataset from the given BIDS directory.
 
-        Parsing the various informations for subjects/sessions/images can be toggled,
+        Parsing the various information for subjects/sessions/images can be toggled,
         as these take the bulk of the loading time in most cases, so it's better to
-        avoid reading them if you do not have a use for them. This is due to the informations
+        avoid reading them if you do not have a use for them. This is due to the information
         being stored in tabular/TSV files instead of per-subject/session/image JSON file.
 
         Parameters

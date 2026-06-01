@@ -23,7 +23,7 @@ from clinicaio.types import BIDSException
 # https://github.com/pytest-dev/pyfakefs/discussions/1312
 # https://pytest-pyfakefs.readthedocs.io/en/latest/troubleshooting.html#pathlib-path-objects-created-outside-of-tests
 #
-# Esssentially when one of the paths used is a "real" pathlib one and
+# Essentially when one of the paths used is a "real" pathlib one and
 # an other one is from pyfakefs's fake pathlib replacement module, then
 # Path.relative_to() (in BIDSDataset.populate_from_dir()) does not work well
 # as it outputs '/tmp/bids_test/README' is not in the subpath of '/tmp/bids_test'

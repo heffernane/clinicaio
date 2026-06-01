@@ -114,10 +114,10 @@ class Subject:
 
     def populate_sessions_info_from_df(self, sessions_tsv_df: DataFrame):
         """
-        Populates the sessions informations from the given dataframe.
+        Populates the sessions information from the given dataframe.
         The dataframe must have a ``session_id`` column which corresponds to
         a session's ID that's already present in this dataset's subject. The other columns
-        will be used as informations for the session at hand: they will not be
+        will be used as information for the session at hand: they will not be
         merged with the existing ones, instead they'll be replaced entirely.
 
         Warnings
