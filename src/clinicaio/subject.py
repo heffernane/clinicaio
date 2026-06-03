@@ -169,8 +169,8 @@ class Subject:
 
     def _populate_sessions_from_folder(
         self, *, sessions_info: bool, image_scans_info: bool
-    ) -> list[str]:
-        unhandled_entries: list[str] = []
+    ) -> set[str]:
+        unhandled_entries: set[str] = set()
 
         # Populate subject's sessions
         for child in os.scandir(self._get_full_path()):
@@ -179,7 +179,7 @@ class Subject:
                 continue
 
             if not child.name.startswith("ses-"):
-                unhandled_entries.append(child.path)
+                unhandled_entries.add(child.path)
                 continue
 
             if not child.is_dir():
@@ -197,21 +197,30 @@ class Subject:
             try:
                 session = self.add_session(id=session_id, info=None)
 
-                session._populate_images_from_folder(image_scans_info=image_scans_info)
+                unhandled_entries |= session._populate_images_from_folder(image_scans_info=image_scans_info)
             except Exception as e:
                 raise BIDSException(
                     f"got exception while adding session {session_id} and populating its images: {e}"
                 )
 
+        # Handling of implicit sessions, e.g. sub-1/anat/... instead of sub-1/ses-A/anat/...
         assert isinstance(self._sessions, dict)
         if len(self._sessions) == 0:
+            # The eventual unhandled entries that we may have at this point only
+            # make sense in a context where we were expecting proper session folders.
+            # Since that's not the case, reset the entries: it will be filled up
+            # again with only the necessary ones that do not match any filename
+            # valid *inside* a "session" folder (which here is implicit/at the same
+            # level as the subject folder).
+            unhandled_entries.clear()
+
             try:
                 session = Session(
                     parent_subject=self,
                     id=None,
                     info=SessionInfo.from_fields({}),
                 )
-                session._populate_images_from_folder(image_scans_info=image_scans_info)
+                unhandled_entries |= session._populate_images_from_folder(image_scans_info=image_scans_info)
             except Exception as e:
                 raise BIDSException(
                     f"got exception while adding session without ID/dedicated folder and populating its images: {e}"

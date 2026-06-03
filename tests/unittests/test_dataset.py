@@ -187,6 +187,36 @@ def test_read_participants_tsv_na_none_participant_id(
     assert subject.info == SubjectInfo.from_fields({"a": "abc", "b": "bce", "c": "cef"})
 
 
+def test_read_participants_tsv_not_found_participant_by_id(
+    fakefs: FakeFilesystem, bids_path: Path
+):
+    _setup_dataset_description(fakefs, bids_path)
+
+    tsv_path = bids_path / "participants.tsv"
+    fakefs.create_file(
+        tsv_path,
+        contents=_make_tsv(
+            [
+                ["participant_id", "a", "b", "c"],
+                ["sub-001", "abc", "bce", "cef"],
+                # Note: this subject does not exist in this dataset, but for now we do not throw an error for it.
+                ["sub-002", "abc", "bce", "cef"],
+            ]
+        ),
+    )
+    fakefs.create_dir(bids_path / "sub-001")
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path, subjects_info=True, sessions_info=False, image_scans_info=False
+    )
+    assert dataset.subjects_count() == 1
+    subject = list(dataset.all_subjects())[0]
+    assert subject.id == "sub-001"
+    assert subject.parent_dataset is dataset
+    assert subject.sessions_count() == 0
+    assert subject.info == SubjectInfo.from_fields({"a": "abc", "b": "bce", "c": "cef"})
+
+
 def test_read_dataset_subject_structure(fakefs: FakeFilesystem, bids_path: Path):
     _setup_dataset_description(fakefs, bids_path)
     desc = _get_dataset_description()
@@ -413,3 +443,53 @@ def test_write_root_file_binary_mode(fakefs: FakeFilesystem, bids_path: Path):
             TypeError, match=escape("a bytes-like object is required, not 'str'")
         ):
             f.write("bar")
+
+
+def test_subject_by_id_invalid_id():
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "invalid subject ID 001: String should match pattern '^sub-[a-zA-Z0-9]+$'"
+        ),
+    ):
+        # note the missing sub- prefix
+        dataset.subject_by_id("001")
+
+
+def test_all_sessions_and_images(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
+
+    image_paths = []
+
+    for path in [
+        "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz",
+        "sub-1/ses-A/pet/sub-1_ses-A_task-rest_sfx2.nii.gz",
+        "sub-1/ses-B/anat/sub-1_ses-B_task-rest_sfx3.nii.gz",
+        "sub-2/ses-A/anat/sub-2_ses-A_task-rest_sfx4.nii.gz",
+        "sub-2/ses-B/pet/sub-2_ses-B_task-rest_sfx5.nii.gz",
+    ]:
+        full_path = bids_path / path
+        image_paths.append(full_path)
+        fakefs.create_file(full_path)
+
+    assert len(image_paths) == 5
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
+    )
+
+    assert sorted(
+        (session.parent_subject.id, session.id) for session in dataset.all_sessions()
+    ) == [
+        ("sub-1", "ses-A"),
+        ("sub-1", "ses-B"),
+        ("sub-2", "ses-A"),
+        ("sub-2", "ses-B"),
+    ]
+
+    assert (
+        sorted(image.get_nifti_image_path() for image in dataset.all_images())
+        == image_paths
+    )

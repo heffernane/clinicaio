@@ -156,6 +156,7 @@ class FileExtension(str, Enum):
 	"""
 
     MAT = "mat"
+    TSV = "tsv"
 
     def is_nifti(self) -> bool:
         """Returns whether this is a NIFTI file extension (as compressed form is also common)"""

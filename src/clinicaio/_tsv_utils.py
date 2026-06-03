@@ -64,8 +64,9 @@ def _write_rows_to_tsv(
     try:
         first_col_idx = cols.index(first_column_name)
     except ValueError:
-        raise BIDSException(
-            f"expected required column {first_column_name} when writing TSV file {tsv_path}, but only found columns {cols}"
+        # Unreachable due to previous check
+        assert False, (
+            "one of the rows is already supposed to have the first column name"
         )
 
     # The ID column in BIDS TSV files is usually required to be the first one. In practice it's

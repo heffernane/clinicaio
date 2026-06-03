@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,7 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 
 from clinicaio.dataset import BIDSDataset
 from clinicaio.image_query import ImageQuery
-from clinicaio.types import DataType
+from clinicaio.types import DataType, FileExtension
 
 
 @pytest.fixture
@@ -72,10 +73,9 @@ all_paths = frozenset(
 # to be written once as part of this fixture, but to never be touched again after.
 @pytest.fixture(scope="module")
 def dataset(fs_module: FakeFilesystem):
-    fakefs = fs_module
     bids_path = Path("/tmp/bids_test_all_queries")
 
-    _setup_dataset_description(fakefs, bids_path)
+    _setup_dataset_description(fs_module, bids_path)
 
     for sub in ["sub-1", "sub-2"]:
         for ses in ["ses-A", "ses-B"]:
@@ -83,26 +83,26 @@ def dataset(fs_module: FakeFilesystem):
                 dir_path = bids_path / sub / ses / data_type
 
                 # all entities and suffix
-                fakefs.create_file(
+                fs_module.create_file(
                     dir_path
                     / f"{sub}_{ses}_trc-18FFDG_task-rest_desc-foobar_sfx.nii.gz"
                 )
                 # all entities but no suffix
-                fakefs.create_file(
+                fs_module.create_file(
                     dir_path / f"{sub}_{ses}_trc-18FFDG_task-rest_desc-foobar.nii.gz"
                 )
                 # all entities but one changed, without suffix
-                fakefs.create_file(
+                fs_module.create_file(
                     dir_path / f"{sub}_{ses}_trc-11CPIB_task-rest_desc-foobar.nii.gz"
                 )
                 # One less entity, no suffix, different file extension
-                fakefs.create_file(dir_path / f"{sub}_{ses}_trc-18FFDG_task-rest.nii")
+                fs_module.create_file(dir_path / f"{sub}_{ses}_trc-18FFDG_task-rest.nii")
                 # less entities, keep suffix
-                fakefs.create_file(
+                fs_module.create_file(
                     dir_path / f"{sub}_{ses}_task-rest_desc-foobar_sfx.nii.gz"
                 )
                 # no entities, keep suffix
-                fakefs.create_file(dir_path / f"{sub}_{ses}_sfx.nii.gz")
+                fs_module.create_file(dir_path / f"{sub}_{ses}_sfx.nii.gz")
 
     yield BIDSDataset.populate_from_dir(
         bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
@@ -333,3 +333,58 @@ def test_query_suffix_wildcard(fakefs: FakeFilesystem):
     assert sorted([str(path.relative_to(bids_path)) for path in image_paths]) == sorted(
         expected_paths
     )
+
+
+def test_query_companion_files(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test_companion")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    # NIFTI+TSV+JSON
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx1.nii.gz")
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx1.tsv")
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx1.json")
+    # NIFTI+JSON but no TSV
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx2.nii.gz")
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx2.json")
+    # NIFTI+TSV but no JSON. Also no session level folder
+    fakefs.create_file(bids_path / "sub-2/anat/sub-2_task-rest_sfx1.nii.gz")
+    fakefs.create_file(bids_path / "sub-2/anat/sub-2_task-rest_sfx1.tsv")
+    # NIFTI+JSON but no TSV
+    fakefs.create_file(bids_path / "sub-2/anat/sub-2_task-rest_sfx2.nii.gz")
+    fakefs.create_file(bids_path / "sub-2/anat/sub-2_task-rest_sfx2.json")
+    # Only NIFTI
+    fakefs.create_file(bids_path / "sub-2/anat/sub-2_task-rest_sfx3.nii.gz")
+
+    def unhandled_entries(paths: list[str]):
+        assert len(paths) == 0, repr(paths)
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path, subjects_info=False, sessions_info=False, image_scans_info=False, _report_unhandled_entries = unhandled_entries
+    )
+
+    assert len(list(dataset.all_images())) == 5
+    assert sorted(
+        dataset.query_images_companions_paths(
+            ImageQuery(suffix="sfx*"),
+            FileExtension.TSV,
+            skip_missing=True,
+        )
+    ) == [
+        bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx1.tsv",
+        bids_path / "sub-2/anat/sub-2_task-rest_sfx1.tsv",
+    ]
+
+    assert sorted(
+        dataset.query_images_companions_paths(
+            ImageQuery(suffix="sfx*"),
+            FileExtension.TSV,
+            skip_missing=False,
+        )
+    ) == [
+        bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx1.tsv",
+        bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx2.tsv",
+        bids_path / "sub-2/anat/sub-2_task-rest_sfx1.tsv",
+        bids_path / "sub-2/anat/sub-2_task-rest_sfx2.tsv",
+        bids_path / "sub-2/anat/sub-2_task-rest_sfx3.tsv",
+    ]

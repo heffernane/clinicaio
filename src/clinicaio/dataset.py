@@ -158,7 +158,7 @@ class BIDSDataset:
         BIDSException
                 Whenever an invalid (per BIDS specification) filename/path is encountered while walking the BIDS directory
         """
-        unhandled_entries: list[str] = []
+        unhandled_entries: set[str] = set()
 
         try:
             description = BIDSDatasetDescription._load_from_folder(bids_dir)
@@ -178,7 +178,7 @@ class BIDSDataset:
                 continue
 
             if not bids_child.name.startswith("sub-"):
-                unhandled_entries.append(bids_child.path)
+                unhandled_entries.add(bids_child.path)
                 continue
 
             if not bids_child.is_dir():
@@ -196,7 +196,7 @@ class BIDSDataset:
             try:
                 subject = dataset.add_subject(id=subject_id, info=None)
 
-                unhandled_entries += subject._populate_sessions_from_folder(
+                unhandled_entries |= subject._populate_sessions_from_folder(
                     sessions_info=sessions_info, image_scans_info=image_scans_info
                 )
             except Exception as e:
@@ -207,10 +207,10 @@ class BIDSDataset:
         if subjects_info:
             dataset._populate_subjects_info_from_tsv()
 
-        unhandled_entries = [
+        relative_unhandled_entries = [
             str(Path(entry).relative_to(bids_dir)) for entry in unhandled_entries
         ]
-        _report_unhandled_entries(unhandled_entries)
+        _report_unhandled_entries(relative_unhandled_entries)
         return dataset
 
     def add_subject(self, id: SubjectId, info: Optional[SubjectInfo]) -> Subject:
@@ -369,17 +369,35 @@ class BIDSDataset:
         return (image.get_nifti_image_path() for image in self.query_images(query))
 
     def query_images_companions_paths(
-        self, query: ImageQuery, extension: FileExtension
+        self, query: ImageQuery, extension: FileExtension, *, skip_missing: bool = False
     ) -> Iterable[Path]:
         """
         Convenience function that only returns the companion image paths with the given file extension
-        instead of the images themselves. See :py:meth:`query_images`.
+        instead of the images themselves. Note that this returns a path for image matching image regardless
+        of whether such a companion file actually exists at time of querying.
+
+        Parameters
+        ----------
+        query
+            The query that the images must match
+        extension
+            The wanted file extension for the image's companion file
+        skip_missing
+            Whether to not include file paths that do not currently exist
+
+        Note
+        ----
+        This method does not guarantee whether a given path is skipped when the iteration reaches it,
+        or when this method returns.
 
         See also
         --------
+        * :py:meth:`query_images`
         * :py:meth:`Image.get_image_companion_file_path() <clinicaio.image.Image.get_image_companion_file_path>`
         """
         return (
-            image.get_image_companion_file_path(extension)
+            path
             for image in self.query_images(query)
+            if (path := image.get_image_companion_file_path(extension))
+            and ((not skip_missing) or path.exists())
         )

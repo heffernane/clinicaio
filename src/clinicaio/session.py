@@ -250,8 +250,8 @@ class Session:
                 f"could not populate images scans info from TSV file {scans_tsv_path}: {e}"
             )
 
-    def _populate_images_from_folder(self, *, image_scans_info: bool) -> list[str]:
-        unhandled_entries: list[str] = []
+    def _populate_images_from_folder(self, *, image_scans_info: bool) -> set[str]:
+        unhandled_entries: set[str] = set()
 
         # Populate the session's images, per-datatype
         for child in os.scandir(self._get_full_path()):
@@ -261,7 +261,7 @@ class Session:
             try:
                 data_type = DataType(child.name)
             except ValueError:
-                unhandled_entries.append(child.path)
+                unhandled_entries.add(child.path)
                 continue
 
             if not child.is_dir():
@@ -292,7 +292,7 @@ class Session:
                 # For now we just exclude any file without a file extension, without raising
                 # an error.
                 if filename_components is None:
-                    unhandled_entries.append(child_image.path)
+                    unhandled_entries.add(child_image.path)
                     continue
                 entities, suffix, extension = filename_components
 
