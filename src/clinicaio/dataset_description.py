@@ -64,7 +64,7 @@ class BIDSDatasetDescription(BaseModel):
                 f"could not create new dataset description", e
             )
 
-    def _write_to_folder(self, folder: Path):
+    def _write_to_folder(self, folder: Path) -> None:
         try:
             json_file = open(folder / _JSON_FILENAME, mode="x")
         except FileExistsError:

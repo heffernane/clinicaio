@@ -58,7 +58,7 @@ class Session:
             images_for_data_type = self._images.get(data_type)
             return 0 if images_for_data_type is None else len(images_for_data_type)
 
-    def _write_to_folder(self):
+    def _write_to_folder(self) -> None:
         session_path = self._get_full_path()
         os.makedirs(session_path, exist_ok=True)
 
@@ -155,7 +155,7 @@ class Session:
     def _scans_tsv_file_name(self) -> str:
         return f"{self._sub_ses_prefix}scans.tsv"
 
-    def populate_image_scans_info_from_df(self, scans_tsv_df: DataFrame):
+    def populate_image_scans_info_from_df(self, scans_tsv_df: DataFrame) -> None:
         """
         Populates the images information from the given dataframe.
         The dataframe must have a ``filename`` column which corresponds to
@@ -237,7 +237,7 @@ class Session:
             )
 
     # read the session's _scans.tsv and fill out scan info for all images
-    def _populate_image_scans_info_from_tsv(self):
+    def _populate_image_scans_info_from_tsv(self) -> None:
         scans_tsv_path = self._get_full_path() / self._scans_tsv_file_name
         if not os.path.exists(scans_tsv_path):
             return

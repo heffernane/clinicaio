@@ -96,7 +96,9 @@ def dataset(fs_module: FakeFilesystem):
                     dir_path / f"{sub}_{ses}_trc-11CPIB_task-rest_desc-foobar.nii.gz"
                 )
                 # One less entity, no suffix, different file extension
-                fs_module.create_file(dir_path / f"{sub}_{ses}_trc-18FFDG_task-rest.nii")
+                fs_module.create_file(
+                    dir_path / f"{sub}_{ses}_trc-18FFDG_task-rest.nii"
+                )
                 # less entities, keep suffix
                 fs_module.create_file(
                     dir_path / f"{sub}_{ses}_task-rest_desc-foobar_sfx.nii.gz"
@@ -360,7 +362,11 @@ def test_query_companion_files(fakefs: FakeFilesystem):
         assert len(paths) == 0, repr(paths)
 
     dataset = BIDSDataset.populate_from_dir(
-        bids_path, subjects_info=False, sessions_info=False, image_scans_info=False, _report_unhandled_entries = unhandled_entries
+        bids_path,
+        subjects_info=False,
+        sessions_info=False,
+        image_scans_info=False,
+        _report_unhandled_entries=unhandled_entries,
     )
 
     assert len(list(dataset.all_images())) == 5

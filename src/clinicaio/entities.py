@@ -10,7 +10,7 @@ from .types import BIDSException, Label
 # not for sub- and ses- entities
 # TODO: enum?
 class EntityKey(Label):
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.value.__hash__()
 
 
@@ -19,10 +19,10 @@ class EntityValue:
     # value: Index | Label
     _value: Label
 
-    def __init__(self, value: str):
+    def __init__(self, value: str) -> None:
         self._value = Label(value)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._value.value.__str__()
 
 
@@ -30,7 +30,7 @@ class EntityValue:
 class Entities:
     _entities: dict[EntityKey, EntityValue]
 
-    def __init__(self, entities: dict[EntityKey, EntityValue]):
+    def __init__(self, entities: dict[EntityKey, EntityValue]) -> None:
         self._entities = entities
 
     @classmethod
@@ -53,14 +53,10 @@ class Entities:
         -------
         The created entities
         """
-
-        def type_or_type_from_val(v, typ):
-            return v if isinstance(v, typ) else typ(v)
-
         return Entities(
             {
-                type_or_type_from_val(key, EntityKey): type_or_type_from_val(
-                    value, EntityValue
+                (key if isinstance(key, EntityKey) else EntityKey(key)): (
+                    value if isinstance(value, EntityValue) else EntityValue(value)
                 )
                 for key, value in entities.items()
             }
@@ -90,7 +86,7 @@ class Entities:
             raise BIDSException("found non str entity in list[str] entities parameter")
 
         try:
-            values = {
+            values: dict[EntityKey, EntityValue] = {
                 EntityKey(key): EntityValue(value)
                 for [key, value] in (
                     entity.split("-", maxsplit=1) for entity in entities
@@ -156,7 +152,7 @@ class Entities:
                 f"invalid input type {type(entities)} for entities {entities}"
             )
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Returns the string form of the entity, i.e. ``"<key1>-<value1>_..._<keyN>-<valueN>"``"""
         return "_".join(f"{key}-{value}" for key, value in self)
 

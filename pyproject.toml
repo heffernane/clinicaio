@@ -45,6 +45,10 @@ sources = "https://github.com/aramis-lab/clinicaio.git"
 pytest = "*"
 notebook = "*"
 pyfakefs = "*"
+mypy = "*"
+# FIXME: version locked because poetry does not seem to be smart
+# enough to select it on its own for Python < 3.11
+pandas-stubs = "2.3.3.260113"
 
 
 [tool.poetry.group.docs.dependencies]
@@ -83,3 +87,6 @@ line-ending = "auto"
 #source_paths = [ "src/" ]
 pytest_add_cli_args_test_selection= [ "tests/unittests" ]
 #debug = true
+
+[tool.mypy]
+files = ["src/clinicaio"]

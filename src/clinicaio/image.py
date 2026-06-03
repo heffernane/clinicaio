@@ -70,21 +70,21 @@ class Image:
                 f"Found unknown file extension {file_ext} for filename {filename_after_sub_ses}"
             )
 
-        entities = entities_and_suffix.split("_")
+        entities_list = entities_and_suffix.split("_")
         suffix = None
-        if "-" not in entities[-1]:
+        if "-" not in entities_list[-1]:
             try:
-                suffix = TypeAdapter(Suffix).validate_python(entities[-1])
+                suffix = TypeAdapter(Suffix).validate_python(entities_list[-1])
             except PydanticError as e:
                 raise BIDSException._from_pydantic(
                     f"found invalid suffix label for image filename {filename_after_sub_ses}",
                     e,
                 )
 
-            entities = entities[:-1]
+            entities_list = entities_list[:-1]
 
         try:
-            entities = Entities.from_str_list(entities)
+            entities = Entities.from_str_list(entities_list)
         except BIDSException as e:
             raise BIDSException(
                 f"found invalid entities for image filename {filename_after_sub_ses}: {e}"

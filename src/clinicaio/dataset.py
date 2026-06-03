@@ -71,7 +71,7 @@ class BIDSDataset:
     def _participants_tsv_file_name(self) -> str:
         return "participants.tsv"
 
-    def populate_subjects_info_from_df(self, participants_tsv_df: DataFrame):
+    def populate_subjects_info_from_df(self, participants_tsv_df: DataFrame) -> None:
         """
         Populates the subjects information from the given dataframe.
         The dataframe must have a ``participant_id`` column which corresponds to
@@ -111,7 +111,7 @@ class BIDSDataset:
 
             subject.info = SubjectInfo.from_fields(info)
 
-    def _populate_subjects_info_from_tsv(self):
+    def _populate_subjects_info_from_tsv(self) -> None:
         participants_tsv_path = self._get_full_path() / self._participants_tsv_file_name
         if not os.path.exists(participants_tsv_path):
             return
@@ -233,7 +233,7 @@ class BIDSDataset:
 
         return subject
 
-    def write_to_folder(self, *, readme: str):
+    def write_to_folder(self, *, readme: str) -> None:
         """
         Creates the dataset folder, writes the dataset description JSON and readme, creates the subjects and sessions
         folders with their TSV files. Images must have already been added to the sessions with

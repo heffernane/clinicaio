@@ -29,7 +29,7 @@ def _read_tsv_as_df(tsv_path: Path) -> pd.DataFrame:
 
 def _write_rows_to_tsv(
     tsv_path: Path, first_column_name: str, rows: Iterable[dict[str, Any]]
-):
+) -> None:
     """
     Writes the given row to the given TSV file, making sure to move the ``first_column_name`` as first column.
 

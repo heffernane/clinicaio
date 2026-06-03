@@ -94,7 +94,7 @@ class Subject:
     def _sessions_tsv_file_name(self) -> str:
         return f"{self.id}_sessions.tsv"
 
-    def _write_to_folder(self):
+    def _write_to_folder(self) -> None:
         subject_path = self._get_full_path()
         os.makedirs(subject_path, exist_ok=True)
 
@@ -112,7 +112,7 @@ class Subject:
                 ),
             )
 
-    def populate_sessions_info_from_df(self, sessions_tsv_df: DataFrame):
+    def populate_sessions_info_from_df(self, sessions_tsv_df: DataFrame) -> None:
         """
         Populates the sessions information from the given dataframe.
         The dataframe must have a ``session_id`` column which corresponds to
@@ -153,7 +153,7 @@ class Subject:
 
             session.info = SessionInfo.from_fields(info)
 
-    def _populate_sessions_info_from_tsv(self):
+    def _populate_sessions_info_from_tsv(self) -> None:
         """Reads the subject's sessions.tsv and fills out info in all sessions"""
         sessions_tsv_path = self._get_full_path() / self._sessions_tsv_file_name
         if not os.path.exists(sessions_tsv_path):
@@ -197,7 +197,9 @@ class Subject:
             try:
                 session = self.add_session(id=session_id, info=None)
 
-                unhandled_entries |= session._populate_images_from_folder(image_scans_info=image_scans_info)
+                unhandled_entries |= session._populate_images_from_folder(
+                    image_scans_info=image_scans_info
+                )
             except Exception as e:
                 raise BIDSException(
                     f"got exception while adding session {session_id} and populating its images: {e}"
@@ -220,7 +222,9 @@ class Subject:
                     id=None,
                     info=SessionInfo.from_fields({}),
                 )
-                unhandled_entries |= session._populate_images_from_folder(image_scans_info=image_scans_info)
+                unhandled_entries |= session._populate_images_from_folder(
+                    image_scans_info=image_scans_info
+                )
             except Exception as e:
                 raise BIDSException(
                     f"got exception while adding session without ID/dedicated folder and populating its images: {e}"

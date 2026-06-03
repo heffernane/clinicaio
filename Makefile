@@ -27,3 +27,7 @@ install.doc: check.lock
 .PHONY: notebooks
 notebooks: install
 	@$(POETRY) run jupyter lab notebooks/
+
+.PHONY: typecheck
+typecheck: install
+	@$(POETRY) run mypy --strict
