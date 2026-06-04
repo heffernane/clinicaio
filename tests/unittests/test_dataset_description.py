@@ -2,6 +2,7 @@ from pathlib import Path
 from re import escape
 
 import pytest
+from packaging.version import Version
 from pyfakefs.fake_filesystem import FakeFilesystem
 
 from clinicaio.dataset_description import BIDSDatasetDescription, BIDSDatasetType
@@ -23,7 +24,7 @@ def test_desc_valid_json():
 
 def test_extra_json_field():
     desc1 = new_desc(
-        '{"Name": "TEST NAME", "BIDSVersion": "1.10.0", "DatasetType": "raw", "CAPSVersion": "1.0.0"}'
+        '{"Name": "TEST NAME", "BIDSVersion": "1.10.0", "DatasetType": "raw", "FooVersion": "1.0.0"}'
     )
     desc2 = new_desc(
         '{"Name": "TEST NAME", "BIDSVersion": "1.10.0", "DatasetType": "raw"}'
@@ -31,7 +32,16 @@ def test_extra_json_field():
 
     assert desc1 == desc2
     with pytest.raises(AttributeError):
-        desc1.caps_version  # type: ignore
+        desc1.foo_version  # type: ignore
+
+
+def test_caps_version_json_field():
+    desc = new_desc(
+        '{"Name": "TEST NAME", "BIDSVersion": "1.10.0", "DatasetType": "raw", "CAPSVersion": "1.0.0"}'
+    )
+
+    assert isinstance(desc.caps_version, Version)
+    assert str(desc.caps_version) == "1.0.0"
 
 
 def test_desc_invalid_json():
@@ -196,4 +206,25 @@ def test_write_to_folder(fakefs: FakeFilesystem):
     assert (
         json_file.contents
         == '{"Name":"TEST DT NAME","BIDSVersion":"1.10.7","DatasetType":"derivative"}'
+    )
+
+
+# NOTE: we also expect the CAPSVersion to not be included in the output when None, in the previous test.
+def test_write_caps_version(fakefs: FakeFilesystem):
+    bids_dir = Path("/tmp/BIDS_test")
+
+    fakefs.create_dir(bids_dir)
+
+    desc = BIDSDatasetDescription.new(
+        BIDSDatasetType.DERIVATIVE,
+        name="TEST DT NAME",
+        bids_version="1.10.7",
+        caps_version="1.0.0",
+    )
+    desc._write_to_folder(bids_dir)
+
+    json_file = fakefs.get_object(bids_dir / "dataset_description.json")
+    assert (
+        json_file.contents
+        == '{"Name":"TEST DT NAME","BIDSVersion":"1.10.7","DatasetType":"derivative","CAPSVersion":"1.0.0"}'
     )

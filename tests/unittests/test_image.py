@@ -11,7 +11,7 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 from clinicaio.dataset import BIDSDataset
 from clinicaio.entities import Entities
 from clinicaio.image import Image
-from clinicaio.types import BIDSException, DataType, FileExtension
+from clinicaio.types import BIDSDataType, BIDSException, FileExtension
 
 
 @pytest.fixture
@@ -72,6 +72,7 @@ def test_parse_entities(filename: str, entities: dict[str, str], suffix: Optiona
         Entities.from_dict(entities),  # type: ignore
         suffix,
         FileExtension.NII_GZ,
+        set(),
     )
 
 
@@ -84,13 +85,14 @@ def test_parse_entities(filename: str, entities: dict[str, str], suffix: Optiona
     ],
 )
 def test_parse_missing_key_value_separator(filename: str):
-    with pytest.raises(
-        ValueError,
-        match=escape("found entities list ")
-        + ".+"
-        + escape(" that had an element without a - separator"),
-    ):
-        Image._parse_filename_components(filename)
+    components = Image._parse_filename_components(filename)
+    assert components is not None
+    entities, suffix, ext, extra_labels = components
+
+    assert entities == Entities.from_dict({"trc": "18FFDG", "task": "rest"})
+    assert suffix == "sfx"
+    assert ext == FileExtension.NII_GZ
+    assert extra_labels == set(["pet"])
 
 
 def test_parse_invalid_suffix():
@@ -109,7 +111,7 @@ def test_json_sidecar(fakefs: FakeFilesystem):
     subject = dataset.add_subject("sub-01")
     session = subject.add_session("ses-A")
     image = session.write_image(
-        DataType.PET,
+        BIDSDataType.PET,
         FileExtension.NII_GZ,
         entities={"task": "rest"},
         suffix="sfx",

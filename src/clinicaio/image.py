@@ -35,6 +35,21 @@ class Image:
     scan_info: ImageScanInfo
     """Non-empty only if enabled when reading the dataset with :py:meth:`BIDSDataset.populate_from_dir() <clinicaio.dataset.BIDSDataset.populate_from_dir>`."""
 
+
+    extra_labels: set[str]
+    # The unfortunate thing about supporting CAPS is that there is no consistency whatsoever with
+    # regards to where the "extra" labels are placed. Here's some examples from Clinica's code:
+    # sub-*_ses-*_T1w_target-{group_label}_transformation-forward_deformation.nii*"
+    #             ^^^^
+    #             extra label just after sub_ses prefix
+    # f"*_trc-{acq_label.value}_pet_space-Ixi549Space{pvc_key_value}{suvr_key_value}{mask_key_value}{fwhm_key_value}_pet.nii*",
+    #                           ^^^^
+    #                           extra label somewhere between other entities key/value pairs
+    #
+    # So that means that for CAPS there is no nice way of handling it. For BIDS however the
+    # filename can fully be re-created as it has only a canonical form.
+    _caps_exact_filename: Optional[str]
+
     suffix: Optional[Suffix] = None
 
     @cached_property
@@ -69,7 +84,7 @@ class Image:
     @staticmethod
     def _parse_filename_components(
         filename_after_sub_ses: str,
-    ) -> Optional[tuple[Entities, Optional[Suffix], FileExtension]]:
+    ) -> Optional[tuple[Entities, Optional[Suffix], FileExtension, set[str]]]:
         """
         A given BIDS image filename is of the form ``sub-<label_ses-<label>_<rest>``,
         where ``<rest>`` is ``<entities>[_<suffix>].<extension>``.
@@ -108,6 +123,16 @@ class Image:
                     e,
                 )
 
+        extra_labels: set[str] = set()
+        # Note: the iteration is done in reversed order so that successive indices
+        # are not invalidated when removing an item from the list: only the "later"
+        # (as in e.g. i+1 until the end of the list) is invalidated, not the indices
+        # "before".
+        for i in reversed(range(len(entities_list))):
+            entity = entities_list[i]
+            if "-" not in entity:
+                extra_labels.add(entities_list.pop(i))
+
         try:
             entities = Entities.from_str_list(entities_list)
         except Exception as e:
@@ -115,22 +140,29 @@ class Image:
                 f"found invalid entities for image filename {filename_after_sub_ses}: {e}"
             ) from e
 
-        return (entities, suffix, extension)
+        return (entities, suffix, extension, extra_labels)
 
     def _get_image_base_full_path(
         self,
     ) -> Path:
-        entities = "" if len(self.entities) == 0 else f"{self.entities}"
-        suffix = "" if self.suffix is None else f"{self.suffix}"
+        if self._caps_exact_filename is None:
+            entities = "" if len(self.entities) == 0 else f"{self.entities}"
+            suffix = "" if self.suffix is None else f"{self.suffix}"
 
-        return (
-            self.parent_session._get_full_path()
-            / f"{self.data_type}"
-            / (
-                self.parent_session._sub_ses_prefix
-                + "_".join(s for s in [entities, suffix] if len(s) != 0)
+            return (
+                self.parent_session._get_full_path()
+                / f"{self.data_type}"
+                / (
+                    self.parent_session._sub_ses_prefix
+                    + "_".join(s for s in [entities, suffix] if len(s) != 0)
+                )
             )
-        )
+        else:
+            return (
+                self.parent_session._get_full_path()
+                / f"{self.data_type}"
+                / self._caps_exact_filename
+            )
 
     def get_nifti_image_path(self) -> Path:
         """Returns the full path to this image's NIFTI file"""

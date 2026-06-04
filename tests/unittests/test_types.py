@@ -8,8 +8,8 @@ from pydantic import ValidationError as PydanticError
 
 from clinicaio.dataset_description import BIDSDatasetType
 from clinicaio.types import (
+    BIDSDataType,
     BIDSException,
-    DataType,
     FileExtension,
     Label,
     SessionId,
@@ -98,7 +98,7 @@ def test_ids_hash_eq(id_class: type, prefix: str):
     ["enum_value", "string_value"],
     [
         (BIDSDatasetType.RAW, "raw"),
-        (DataType.PHENOTYPE, "phenotype"),
+        (BIDSDataType.PHENOTYPE, "phenotype"),
         (FileExtension.NII_GZ, "nii.gz"),
     ],
 )
@@ -137,7 +137,7 @@ def test_file_extension_is_nifti():
 @pytest.mark.parametrize(
     ["enum_type"],
     [
-        (DataType,),
+        (BIDSDataType,),
         (FileExtension,),
     ],
 )

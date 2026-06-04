@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Optional
 
 from packaging.version import Version
 from pydantic import (
@@ -51,12 +51,23 @@ class BIDSDatasetDescription(BaseModel):
         # DatasetType is recommended with "raw" as default
         default_factory=lambda: BIDSDatasetType.RAW,
     )
+    caps_version: Annotated[
+        Optional[Version],
+        Field(alias="CAPSVersion", default_factory=lambda: None),
+        BeforeValidator(lambda s: None if s is None else Version(s)),
+        PlainSerializer(str, return_type=str),
+    ]
 
     # Such an unidiomatic constructor is necessary because Pydantic defines its own in the parent
     # class and expects it to be there when going from JSON input, so we can't just redefine __init__()
     @classmethod
     def new(
-        cls, dataset_type: BIDSDatasetType, *, name: str, bids_version: str
+        cls,
+        dataset_type: BIDSDatasetType,
+        *,
+        name: str,
+        bids_version: str,
+        caps_version: Optional[str] = None,
     ) -> BIDSDatasetDescription:
         """
         Creates a new dataset description object, to describe a BIDS dataset.
@@ -68,6 +79,7 @@ class BIDSDatasetDescription(BaseModel):
                     "name": name,
                     "dataset_type": dataset_type,
                     "bids_version": bids_version,
+                    "caps_version": caps_version,
                 },
                 by_name=True,
             )
@@ -87,7 +99,11 @@ class BIDSDatasetDescription(BaseModel):
         # NOTE: the error handling needs to happen above, but make sure to use a with ...: construct
         # as otherwise the file will not be flushed or closed
         with json_file:
-            print(self.model_dump_json(by_alias=True), file=json_file, end="")
+            print(
+                self.model_dump_json(by_alias=True, exclude_none=True),
+                file=json_file,
+                end="",
+            )
 
     @classmethod
     def _load_from_folder(cls, desc_json_folder: Path) -> BIDSDatasetDescription:

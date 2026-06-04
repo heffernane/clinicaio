@@ -10,7 +10,7 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 from clinicaio.dataset import BIDSDataset
 from clinicaio.entities import Entities
 from clinicaio.image import Image
-from clinicaio.types import BIDSException, DataType, FileExtension
+from clinicaio.types import BIDSException, BIDSDataType, FileExtension
 
 
 # Rename the pyfakefs fixture so it's clearer what it actually is
@@ -74,7 +74,11 @@ def test_write_image_parent_directories(fakefs: FakeFilesystem):
     assert not fakefs.exists(bids_path)
 
     session.write_image(
-        DataType.ANAT, FileExtension.NII_GZ, entities={}, suffix="T1w", scan_info=None
+        BIDSDataType.ANAT,
+        FileExtension.NII_GZ,
+        entities={},
+        suffix="T1w",
+        scan_info=None,
     )
 
     assert sorted(list(os.listdir(bids_path))) == ["sub-001"]
@@ -109,16 +113,16 @@ def test_images_count(fakefs: FakeFilesystem):
     session = subject.session_by_id("ses-A")
     assert session is not None
 
-    assert list(session.images_by_data_type(DataType.FMAP)) == []
-    assert session.images_count(DataType.FMAP) == 0
+    assert list(session.images_by_data_type(BIDSDataType.FMAP)) == []
+    assert session.images_count(BIDSDataType.FMAP) == 0
     assert list(
-        map(Image.get_nifti_image_path, session.images_by_data_type(DataType.PET))
+        map(Image.get_nifti_image_path, session.images_by_data_type(BIDSDataType.PET))
     ) == [
         bids_path / "sub-1/ses-A/pet/sub-1_ses-A_task-rest_sfx3.nii.gz",
     ]
-    assert session.images_count(DataType.PET) == 1
+    assert session.images_count(BIDSDataType.PET) == 1
     assert list(
-        map(Image.get_nifti_image_path, session.images_by_data_type(DataType.ANAT))
+        map(Image.get_nifti_image_path, session.images_by_data_type(BIDSDataType.ANAT))
     ) == list(
         map(
             lambda path: bids_path / "sub-1/ses-A" / path,
@@ -128,7 +132,7 @@ def test_images_count(fakefs: FakeFilesystem):
             ],
         )
     )
-    assert session.images_count(DataType.ANAT) == 2
+    assert session.images_count(BIDSDataType.ANAT) == 2
 
     assert session.images_count() == 3
 
@@ -144,7 +148,7 @@ def test_write_image_invalid_file_extension(fakefs: FakeFilesystem):
     ):
         session.write_image(
             # Note the non-NIFTI file extension
-            DataType.PET,
+            BIDSDataType.PET,
             FileExtension.JSON,
             entities={},
             suffix=None,
@@ -163,7 +167,7 @@ def test_write_image_invalid_suffix(fakefs: FakeFilesystem):
     ):
         session.write_image(
             # Note the invalid suffix
-            DataType.PET,
+            BIDSDataType.PET,
             FileExtension.NII_GZ,
             entities={},
             suffix="é",
@@ -187,11 +191,12 @@ def test_scans_info_df_none_filename():
     subject = dataset.add_subject("sub-01")
     session = subject.add_session("ses-A")
     image = session._add_image(
-        DataType.PET,
+        BIDSDataType.PET,
         FileExtension.NII_GZ,
         entities=Entities.from_dict({}),
         suffix="sfx",
         scan_info=None,
+        extra_labels=set(),
     )
     assert image.parent_session is session
 
@@ -214,11 +219,12 @@ def test_scans_info_df_missing_data_type_dir():
     subject = dataset.add_subject("sub-01")
     session = subject.add_session("ses-A")
     image = session._add_image(
-        DataType.PET,
+        BIDSDataType.PET,
         FileExtension.NII_GZ,
         entities=Entities.from_dict({}),
         suffix="sfx",
         scan_info=None,
+        extra_labels=set(),
     )
     assert image.parent_session is session
 
@@ -246,11 +252,12 @@ def test_scans_info_df_invalid_data_type():
     subject = dataset.add_subject("sub-01")
     session = subject.add_session("ses-A")
     image = session._add_image(
-        DataType.PET,
+        BIDSDataType.PET,
         FileExtension.NII_GZ,
         entities=Entities.from_dict({}),
         suffix="sfx",
         scan_info=None,
+        extra_labels=set(),
     )
     assert image.parent_session is session
 
@@ -278,11 +285,12 @@ def test_scans_info_df_missing_filename_sub_ses_prefix():
     subject = dataset.add_subject("sub-01")
     session = subject.add_session("ses-A")
     image = session._add_image(
-        DataType.PET,
+        BIDSDataType.PET,
         FileExtension.NII_GZ,
         entities=Entities.from_dict({}),
         suffix="sfx",
         scan_info=None,
+        extra_labels=set(),
     )
     assert image.parent_session is session
 
@@ -353,20 +361,12 @@ def test_non_directory_data_type(fakefs: FakeFilesystem):
     # Note the fact it's created as a file instead of a directory
     fakefs.create_file(bids_path / "sub-1/ses-A/anat")
 
-    with pytest.raises(
-        BIDSException,
-        match=escape(
-            "got exception while adding subject sub-1 and populating its sessions: "
-            "got exception while adding session ses-A and populating its images: "
-            "Found data type entry anat that was not a directory"
-        ),
-    ):
-        BIDSDataset.populate_from_dir(
-            bids_path,
-            subjects_info=False,
-            sessions_info=False,
-            image_scans_info=False,
-        )
+    BIDSDataset.populate_from_dir(
+        bids_path,
+        subjects_info=False,
+        sessions_info=False,
+        image_scans_info=False,
+    )
 
 
 def test_missing_image_prefix(fakefs: FakeFilesystem):

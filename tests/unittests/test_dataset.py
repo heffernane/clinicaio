@@ -9,8 +9,9 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 
 from clinicaio.dataset import BIDSDataset
 from clinicaio.dataset_description import BIDSDatasetDescription, BIDSDatasetType
+from clinicaio.image_query import ImageQuery
 from clinicaio.subject import SubjectInfo
-from clinicaio.types import BIDSException
+from clinicaio.types import BIDSException, CAPSDataType
 
 # NOTE: Each test has its own pyfakefs/it's reset after the individual test run ends. Pytest runs tests sequentially.
 # See:
@@ -631,3 +632,100 @@ def test_dataset_populate_no_info_by_default(
     else:
         with pytest.raises(Exception, match=escape(err_msg)):
             populate_dataset(bids_path)
+
+def test_read_caps_dataset(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    fakefs.create_file(
+        bids_path / "dataset_description.json",
+        contents='{"Name": "TEST 123", "BIDSVersion": "1.11.0", "DatasetType": "derivative", "CAPSVersion": "1.0.0"}',
+    )
+
+    for filename in [
+        "sub-1_ses-A_target-Ixi549Space_transformation-forward_deformation.nii.gz",
+        "sub-1_ses-A_segm-1_space-Ixi549Space_modulated-on_probability.nii.gz",
+    ]:
+        fakefs.create_file(
+            bids_path
+            / "subjects/sub-1/ses-A/t1/spm/segmentation/normalized_space"
+            / filename
+        )
+
+    # FIXME: does not detect the wrong "-" after ses-A ??????
+    # fakefs.create_file(bids_path / "subjects/sub-1/ses-A/t1/spm/segmentation/native_space/sub-1_ses-A-segm-1_probability.nii.gz")
+    fakefs.create_file(
+        bids_path
+        / "subjects/sub-1/ses-A/t1/spm/segmentation/native_space/sub-1_ses-A_segm-1_probability.nii.gz"
+    )
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path,
+        subjects_info=False,
+        sessions_info=False,
+        image_scans_info=False,
+        caps_dataset=True,
+    )
+
+    print(list(dataset.all_images()))
+    assert len(list(dataset.all_images())) == 3
+
+    assert (
+        len(
+            list(
+                dataset.query_images_nifti_paths(
+                    ImageQuery(data_type=CAPSDataType("t1/spm/segmentation/*"))
+                )
+            )
+        )
+        == 3
+    )
+
+    assert (
+        len(
+            list(
+                dataset.query_images_nifti_paths(
+                    ImageQuery(
+                        data_type=CAPSDataType("t1/spm/segmentation/normalized_space")
+                    )
+                )
+            )
+        )
+        == 2
+    )
+
+    assert (
+        len(
+            list(
+                dataset.query_images_nifti_paths(
+                    ImageQuery(
+                        data_type=CAPSDataType("t1/spm/segmentation/native_space")
+                    )
+                )
+            )
+        )
+        == 1
+    )
+
+    assert (
+        len(
+            list(
+                dataset.query_images_nifti_paths(
+                    ImageQuery(data_type=CAPSDataType("t1/*/seg*mentation/*"))
+                )
+            )
+        )
+        == 3
+    )
+
+    assert (
+        len(
+            list(
+                dataset.query_images_nifti_paths(
+                    ImageQuery(
+                        data_type=CAPSDataType("t1/spm/segmentation/native_space/foo")
+                    )
+                )
+            )
+        )
+        == 0
+    )

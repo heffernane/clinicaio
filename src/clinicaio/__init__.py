@@ -5,4 +5,4 @@ from .image import Image, ImageScanInfo
 from .image_query import ImageQuery
 from .session import Session, SessionInfo
 from .subject import Subject, SubjectInfo
-from .types import BIDSException, DataType, FileExtension
+from .types import BIDSDataType, BIDSException, CAPSDataType, FileExtension

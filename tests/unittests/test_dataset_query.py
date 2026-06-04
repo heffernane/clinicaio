@@ -7,7 +7,13 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 
 from clinicaio.dataset import BIDSDataset
 from clinicaio.image_query import ImageQuery
-from clinicaio.types import BIDSException, DataType, FileExtension, SessionId, SubjectId
+from clinicaio.types import (
+    BIDSDataType,
+    BIDSException,
+    FileExtension,
+    SessionId,
+    SubjectId,
+)
 
 
 @pytest.fixture
@@ -146,7 +152,7 @@ def dataset(fs_module: FakeFilesystem):
             len(all_paths) / 2,
         ),
         (
-            ImageQuery(data_type=DataType.ANAT),
+            ImageQuery(data_type=BIDSDataType.ANAT),
             {path for path in all_paths if "anat" in path},
             len(all_paths) / 2,
         ),
@@ -177,7 +183,7 @@ def dataset(fs_module: FakeFilesystem):
             ImageQuery(
                 subjects=["sub-1"],
                 sessions=["ses-A"],
-                data_type=DataType.PET,
+                data_type=BIDSDataType.PET,
                 entities={"trc": "18FFDG", "task": "rest", "desc": "foobar"},
                 suffix="sfx",
             ),
@@ -193,7 +199,7 @@ def dataset(fs_module: FakeFilesystem):
             ImageQuery(
                 subjects=["sub-1"],
                 sessions=["ses-A"],
-                data_type=DataType.PET,
+                data_type=BIDSDataType.PET,
                 entities={
                     "desc": "foobar",
                     "task": "rest",
@@ -212,7 +218,7 @@ def dataset(fs_module: FakeFilesystem):
             ImageQuery(
                 subjects=["sub-1"],
                 sessions=["ses-A"],
-                data_type=DataType.PET,
+                data_type=BIDSDataType.PET,
                 # capital entity value
                 entities={
                     "desc": "foobar",
@@ -228,7 +234,7 @@ def dataset(fs_module: FakeFilesystem):
             ImageQuery(
                 subjects=["sub-1"],
                 sessions=["ses-A"],
-                data_type=DataType.PET,
+                data_type=BIDSDataType.PET,
                 entities={
                     "desc": "foobar",
                     "task": "rest",
@@ -245,7 +251,7 @@ def dataset(fs_module: FakeFilesystem):
                 subjects=["sub-1"],
                 # non-capital session ID/label
                 sessions=["ses-a"],
-                data_type=DataType.PET,
+                data_type=BIDSDataType.PET,
                 entities={
                     "desc": "foobar",
                     "task": "rest",

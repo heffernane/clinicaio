@@ -10,7 +10,7 @@ from clinicaio.dataset import BIDSDataset
 from clinicaio.entities import Entities
 from clinicaio.session import SessionInfo
 from clinicaio.subject import SubjectInfo
-from clinicaio.types import BIDSException, DataType, FileExtension
+from clinicaio.types import BIDSDataType, BIDSException, FileExtension
 
 
 # Rename the pyfakefs fixture so it's clearer what it actually is
@@ -377,16 +377,16 @@ def test_implicit_session(fakefs: FakeFilesystem):
     images = list(session.all_images())
     assert len(images) == 3
     for data_type, entities, suffix, ext, scan_info in [
-        (DataType.ANAT, {}, "sfx", FileExtension.NII_GZ, {"a": "1", "bcd": None}),
+        (BIDSDataType.ANAT, {}, "sfx", FileExtension.NII_GZ, {"a": "1", "bcd": None}),
         (
-            DataType.ANAT,
+            BIDSDataType.ANAT,
             {"task": "rest"},
             None,
             FileExtension.NII_GZ,
             {"a": "2", "bcd": "3"},
         ),
         (
-            DataType.PET,
+            BIDSDataType.PET,
             {"task": "rest"},
             "sfx2",
             FileExtension.NII,
@@ -436,16 +436,16 @@ def test_implicit_session(fakefs: FakeFilesystem):
     images = list(sesA.all_images())
     assert len(images) == 3
     for data_type, entities, suffix, ext, scan_info in [
-        (DataType.ANAT, {}, "sfx", FileExtension.NII_GZ, {"a": "1", "bcd": None}),
+        (BIDSDataType.ANAT, {}, "sfx", FileExtension.NII_GZ, {"a": "1", "bcd": None}),
         (
-            DataType.ANAT,
+            BIDSDataType.ANAT,
             {"task": "rest"},
             None,
             FileExtension.NII_GZ,
             {"a": "2", "bcd": "3"},
         ),
         (
-            DataType.PET,
+            BIDSDataType.PET,
             {"task": "rest"},
             "sfx2",
             FileExtension.NII,

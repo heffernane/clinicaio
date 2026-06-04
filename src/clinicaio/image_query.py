@@ -9,7 +9,7 @@ from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticError
 
 from .entities import Entities, EntitiesLike
-from .types import BIDSException, DataType, SessionId, SubjectId
+from .types import BIDSDataType, BIDSException, DataType, SessionId, SubjectId
 
 
 @dataclass
@@ -61,7 +61,7 @@ class ImageQuery:
             ImageQuery(sub_ses={"sub-ADNI027S0074": {"ses-A"}})
             ImageQuery(sub_ses={"sub-ADNI027S0074": {"ses-A", "ses-B"}})
             ImageQuery(sub_ses=[("sub-ADNI027S0074", "ses-A"), ("sub-AIBL1234", "ses-B")])
-            ImageQuery(data_type=DataType.PET)
+            ImageQuery(data_type=BIDSDataType.PET)
             ImageQuery(data_type="pet")
             ImageQuery(entities={"trc": "11CPIB", "task": "rest"})
             ImageQuery(entities=["trc-11CPIB", "task-rest"])
@@ -73,9 +73,9 @@ class ImageQuery:
     .. code-block:: python
 
             image_query = ImageQuery(
-                    subjects={"sub-ADNI027S0074"},
-                    sessions={"ses-M000"},
-                    data_type=DataType.PET,
+                    subjects=["sub-ADNI027S0074"],
+                    sessions=["ses-M000"],
+                    data_type=BIDSDataType.PET,
                     entities={"trc": "18FFDG", "rec": "coregiso8"},
                     suffix="pet",
             )
@@ -109,6 +109,7 @@ class ImageQuery:
     data_type: Optional[DataType]
     entities: Entities
     suffix: Optional[str]
+    extra_labels: set[str]
 
     def __init__(
         self,
@@ -125,6 +126,7 @@ class ImageQuery:
         entities: EntitiesLike = None,
         # +/- modality
         suffix: Optional[str] = None,
+        extra_labels: Optional[set[str]] = None,
     ):
         def validate_value(value_type: Any, value: Any, err_prefix: str) -> Any:
             try:
@@ -171,7 +173,7 @@ class ImageQuery:
         if not ((data_type is None) or (isinstance(data_type, (DataType, str)))):
             raise TypeError(f"invalid type {type(data_type)} for data_type argument")
         if isinstance(data_type, str):
-            data_type = DataType(data_type)
+            data_type = BIDSDataType(data_type)
         self.data_type = data_type
 
         self.entities = Entities.from_any(entities)
@@ -184,3 +186,5 @@ class ImageQuery:
             raise ValueError(
                 "querying for both cross-product subjects-sessions pairs and cartesian-product of subjects and sessions does not make sense"
             )
+
+        self.extra_labels = set() if extra_labels is None else extra_labels

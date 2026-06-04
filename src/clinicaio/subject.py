@@ -36,7 +36,7 @@ class Subject:
     _sessions: Session | dict[SessionId, Session] = field(default_factory=lambda: {})
 
     def _get_full_path(self) -> Path:
-        return self.parent_dataset._get_full_path() / f"{self.id}"
+        return self.parent_dataset._get_subjects_path() / f"{self.id}"
 
     def add_session(self, id: SessionId, info: Optional[SessionInfo] = None) -> Session:
         """

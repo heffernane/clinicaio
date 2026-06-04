@@ -16,7 +16,15 @@ from typing_extensions import NotRequired, TypedDict
 from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
 from .entities import Entities, EntitiesLike
 from .image import Image, ImageScanInfo
-from .types import BIDSException, DataType, FileExtension, SessionId, Suffix
+from .types import (
+    BIDSDataType,
+    BIDSException,
+    CAPSDataType,
+    DataType,
+    FileExtension,
+    SessionId,
+    Suffix,
+)
 
 if TYPE_CHECKING:
     from .subject import Subject
@@ -42,15 +50,22 @@ class Session:
         """
         Retrieves all this session's images that match the given data type.
         """
-
-        return self._images.get(DataType(data_type)) or []
+        if isinstance(data_type, CAPSDataType):
+            return (
+                image
+                for image in self.all_images()
+                if isinstance(image.data_type, CAPSDataType)
+                and image.data_type.matches_wildcard(data_type)
+            )
+        else:
+            return self._images.get(BIDSDataType(data_type)) or []
 
     def all_images(self) -> Iterable[Image]:
         """Returns all the images that are part of this session"""
         for images in self._images.values():
             yield from images
 
-    def images_count(self, data_type: Optional[DataType] = None) -> int:
+    def images_count(self, data_type: Optional[BIDSDataType] = None) -> int:
         """
         Parameters
         ----------
@@ -92,11 +107,21 @@ class Session:
         *,
         suffix: Optional[Suffix],
         scan_info: Optional[ImageScanInfo],
+        extra_labels: set[str],
     ) -> Image:
         if not nifti_extension.is_nifti():
             raise ValueError(
                 f"provided non-NIFTI file extension {nifti_extension} when adding image to session"
             )
+
+        if (
+            isinstance(data_type, CAPSDataType)
+            and not self.parent_subject.parent_dataset._is_caps()
+        ):
+            raise BIDSException(
+                f"provided CAPS data type {data_type} for non-CAPS dataset"
+            )
+        # FIXME: same for BIDSD* vs is_caps()??
 
         image = Image(
             parent_session=self,
@@ -105,6 +130,8 @@ class Session:
             entities=entities,
             suffix=suffix,
             scan_info=ImageScanInfo({}) if scan_info is None else scan_info,
+            extra_labels=extra_labels,
+            _caps_exact_filename=None,
         )
 
         if data_type not in self._images:
@@ -116,7 +143,7 @@ class Session:
 
     def write_image(
         self,
-        data_type: DataType | str,
+        data_type: BIDSDataType | str,
         nifti_extension: FileExtension | str,
         *,
         entities: EntitiesLike,
@@ -147,7 +174,7 @@ class Session:
                 raise BIDSException._from_pydantic("invalid suffix", e)
 
         if isinstance(data_type, str):
-            data_type = DataType(data_type)
+            data_type = BIDSDataType(data_type)
         if isinstance(nifti_extension, str):
             nifti_extension = FileExtension(nifti_extension)
 
@@ -157,6 +184,7 @@ class Session:
             Entities.from_any(entities),
             suffix=suffix,
             scan_info=scan_info,
+            extra_labels=set(),
         )
 
         data_type_folder_path = self._get_full_path() / f"{data_type}"
@@ -194,6 +222,8 @@ class Session:
             raise ValueError(
                 "the dataframe did not have the required 'filename' column"
             )
+        
+        is_caps = self.parent_subject.parent_dataset._is_caps()
 
         infos: list[dict[str, Any]] = scans_tsv_df.to_dict(orient="records")  # type: ignore
         for info in infos:
@@ -211,7 +241,7 @@ class Session:
                 ) from e
 
             try:
-                data_type = DataType(data_type)
+                data_type = CAPSDataType(data_type) if is_caps else BIDSDataType(data_type) 
             except ValueError as e:
                 raise ValueError(
                     f"expected valid data type as first folder of filename {image_filename} in dataframe"
@@ -234,7 +264,7 @@ class Session:
                 raise ValueError(
                     f"found image filename {image_filename} in dataframe without any file extension"
                 )
-            entities, suffix, extension = filename_components
+            entities, suffix, extension, extra_labels = filename_components
 
             if not extension.is_nifti():
                 continue
@@ -245,6 +275,7 @@ class Session:
                     img_by_data_type.nifti_extension == extension
                     and img_by_data_type.entities == entities
                     and img_by_data_type.suffix == suffix
+                    and img_by_data_type.extra_labels == extra_labels
                 ):
                     image = img_by_data_type
                     break
@@ -273,25 +304,35 @@ class Session:
     def _populate_images_from_folder(self, *, image_scans_info: bool) -> set[str]:
         unhandled_entries: set[str] = set()
 
+        is_caps = self.parent_subject.parent_dataset._is_caps()
+        session_path = self._get_full_path()
+
+        list_dirs = (
+            ((dir.name, dir.path) for dir in os.scandir(session_path) if dir.is_dir())
+            if not is_caps
+            else (
+                (os.path.basename(dir_path), dir_path)
+                for (dir_path, dirnames, filenames) in os.walk(session_path)
+            )
+        )
+
         # Populate the session's images, per-datatype
-        for child in os.scandir(self._get_full_path()):
-            if child.name == self._scans_tsv_file_name:
-                continue
-
-            try:
-                data_type = DataType(child.name)
-            except ValueError:
-                unhandled_entries.add(child.path)
-                continue
-
-            if not child.is_dir():
-                raise ValueError(
-                    f"Found data type entry {data_type} that was not a directory"
-                )
+        for dir_name, dir_path in list_dirs:
+            if is_caps:
+                # FIXME: TRY/EXCEPT
+                data_type = CAPSDataType(str(Path(dir_path).relative_to(session_path)))
+            else:
+                try:
+                    data_type = BIDSDataType(dir_name)
+                except ValueError:
+                    unhandled_entries.add(dir_path)
+                    continue
 
             maybe_duplicated_images: list[Image] = []
 
-            for child_image in os.scandir(child.path):
+            for child_image in os.scandir(dir_path):
+                if child_image.is_dir():
+                    continue
                 if not child_image.name.startswith(self._sub_ses_prefix):
                     raise ValueError(
                         f"expected {data_type}/{child_image.name} "
@@ -314,7 +355,12 @@ class Session:
                 if filename_components is None:
                     unhandled_entries.add(child_image.path)
                     continue
-                entities, suffix, extension = filename_components
+                entities, suffix, extension, extra_labels = filename_components
+
+                if (not is_caps) and len(extra_labels) != 0:
+                    raise BIDSException(
+                        f"found non '-' delimited key/value pairs for entities in BIDS image filename: {extra_labels}"
+                    )
 
                 # All the usual filename validation is done for non-NIFTI files, so that
                 # we do not end up in a situation where the companion files (.json, etc.)
@@ -330,7 +376,10 @@ class Session:
                     entities=entities,
                     suffix=suffix,
                     scan_info=None,
+                    extra_labels=extra_labels,
                 )
+                if is_caps:
+                    image._caps_exact_filename = child_image.name
                 # https://bids-specification.readthedocs.io/en/stable/common-principles.html#uniqueness-of-data-files
                 # "If multiple extensions are permissible (for example, .nii and .nii.gz), there MUST only be one such
                 # file with the same entities, datatype and suffix"

@@ -21,7 +21,7 @@ from .image import Image
 from .image_query import ImageQuery
 from .session import Session
 from .subject import Subject, SubjectInfo
-from .types import BIDSException, FileExtension, SubjectId
+from .types import BIDSException, CAPSDataType, FileExtension, SubjectId
 
 
 @dataclass
@@ -93,8 +93,14 @@ class BIDSDataset:
         for session in self.all_sessions():
             yield from session.all_images()
 
+    def _is_caps(self) -> bool:
+        return self.description.caps_version is not None
+
     def _get_full_path(self) -> Path:
         return self.bids_path
+
+    def _get_subjects_path(self) -> Path:
+        return self._get_full_path() / ("subjects" if self._is_caps() else "")
 
     @cached_property
     def _participants_tsv_file_name(self) -> str:
@@ -175,7 +181,10 @@ class BIDSDataset:
             subject.info = TypeAdapter(SubjectInfo).validate_python(info)
 
     def _populate_subjects_info_from_tsv(self) -> None:
-        participants_tsv_path = self._get_full_path() / self._participants_tsv_file_name
+        # FIXME: where should the participants.tsv be for CAPS datasets???
+        participants_tsv_path = (
+            self._get_subjects_path() / self._participants_tsv_file_name
+        )
         if not os.path.exists(participants_tsv_path):
             return
 
@@ -195,6 +204,7 @@ class BIDSDataset:
         subjects_info: bool = False,
         sessions_info: bool = False,
         image_scans_info: bool = False,
+        caps_dataset: bool = False,
         report_unhandled_entries: Optional[Callable[[list[str]], None]] = None,
     ) -> BIDSDataset:
         """
@@ -215,6 +225,8 @@ class BIDSDataset:
                 Whether to fill out :py:class:`session information <clinicaio.session.SessionInfo>` from the ``*_sessions.tsv`` files
         image_scans_info :
                 Whether to fill out :py:class:`image scan information <clinicaio.image.ImageScanInfo>` from the ``*_scans.tsv`` files
+        caps_dataset :
+                Whether this dataset is expected to be a CAPS dataset.
         report_unhandled_entries :
                 A function that will be called with the list of relative paths to files and directories that were
                 ignored/not handled while populating the dataset. This is mostly useful for debugging purpose when
@@ -223,7 +235,8 @@ class BIDSDataset:
         Raises
         ------
         BIDSException
-                Whenever an invalid (per BIDS specification) filename/path is encountered while walking the BIDS directory
+                Whenever an invalid (per BIDS specification) filename/path is encountered while walking the BIDS directory, or if
+                a CAPS dataset is encountered when one was not expected (with ``caps_dataset=True``)
         """
         bids_dir = Path(bids_dir)
 
@@ -236,10 +249,15 @@ class BIDSDataset:
                 f"could not read BIDS description from JSON file: {e}"
             ) from e
 
+        if description.caps_version is not None and not caps_dataset:
+            raise BIDSException(
+                f"found CAPS version {description.caps_version} but did not expect a CAPS dataset"
+            )
+
         dataset = BIDSDataset(bids_path=bids_dir, description=description)
 
         # Populate subjects/subjects
-        for bids_child in os.scandir(bids_dir):
+        for bids_child in os.scandir(dataset._get_subjects_path()):
             # Handled once all subjects have been read
             if bids_child.name == dataset._participants_tsv_file_name:
                 continue
@@ -327,11 +345,19 @@ class BIDSDataset:
         readme
             The content of the README file that will be placed at the root of the dataset. See the `BIDS Specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/dataset-description.html#readme>`__
 
+        Raises
+        ------
+        BIDSException
+            if the given dataset description corresponds to a CAPS dataset (only writing BIDS datasets is supported for now)
+
         See also
         --------
         * :py:meth:`write_root_file`
         * :py:meth:`Session.write_image() <clinicaio.session.Session.write_image>`
         """
+        if self.description.caps_version is not None:
+            raise BIDSException("Writing CAPS datasets is not supported for now")
+
         os.makedirs(self.bids_path, exist_ok=True)
 
         try:
@@ -413,6 +439,15 @@ class BIDSDataset:
 
         * :doc:`/examples/assorted_queries`
         """
+        if isinstance(query.data_type, CAPSDataType) and not self._is_caps():
+            raise BIDSException(
+                f"found CAPS data type query {query.data_type} on non-CAPS dataset"
+            )
+        if isinstance(query.data_type, BIDSDataset) and self._is_caps():
+            raise BIDSException(
+                f"found BIDS data type query {query.data_type} on CAPS dataset"
+            )
+
         filtered_subjects = (
             self.all_subjects()
             if len(query.subjects) == 0 and len(query.sub_ses) == 0
@@ -455,6 +490,11 @@ class BIDSDataset:
 
                     if len(query.entities) > 0 and (
                         not image.entities.contains_all(query.entities)
+                    ):
+                        continue
+
+                    if len(query.extra_labels) > 0 and not all(
+                        label in image.extra_labels for label in query.extra_labels
                     ):
                         continue
 

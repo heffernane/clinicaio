@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from fnmatch import fnmatchcase
 from typing import Annotated, TypeAlias
 
 from pydantic import Strict, StringConstraints
@@ -72,7 +73,44 @@ class BIDSException(Exception):
         return BIDSException(f"{prefix}: {pydantic_msg}")
 
 
-class DataType(str, Enum):
+class CAPSDataType:
+    folders: list[str]
+
+    def __init__(self, path_components: str):
+        """
+        Parameters
+        ----------
+        path_components :
+            The path components that lie between the session-level path and the image filename itself, e.g.
+            ``t1/spm/segmentation/normalized_space`` in the pseudo-image path
+            ``subjects/sub-01/ses-A/t1/spm/segmentation/normalized_space/<source_file>_target-Ixi549Space_transformation-forward_deformation.nii.gz``
+
+        Raises
+        ------
+        BIDSException
+            if one of the path components is empty (e.g. a//b/c), or none is provided
+        """
+
+        self.folders = path_components.split("/")
+
+        if len(self.folders) == 0:
+            raise BIDSException("no path components were provided")
+
+        for folder in self.folders:
+            if len(folder) == 0:
+                raise BIDSException(f"found empty path component in {path_components}")
+
+    def matches_wildcard(self, wildcard_pattern: CAPSDataType) -> bool:
+        return len(self.folders) == len(wildcard_pattern.folders) and all(
+            fnmatchcase(folder, wildcard_folder)
+            for folder, wildcard_folder in zip(self.folders, wildcard_pattern.folders)
+        )
+
+    def __str__(self) -> str:
+        return "/".join(self.folders)
+
+
+class BIDSDataType(str, Enum):
     """
     `BIDS specification <https://bids-specification.readthedocs.io/en/stable/common-principles.html#definitions>`__
     """
@@ -130,6 +168,9 @@ class DataType(str, Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
+DataType: TypeAlias = BIDSDataType | CAPSDataType
 
 
 class FileExtension(str, Enum):
