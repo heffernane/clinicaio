@@ -312,15 +312,32 @@ class BIDSDataset:
         Returns all the images matching the query.
         See :py:class:`~clinicaio.image_query.ImageQuery` for details on the query itself.
 
+        Raises
+        ------
+        BIDSException
+            if both ``query.sub_ses`` and either ``query.subjects``or ``query.sessions`` are specified
+            at the same time: the former operates on a cross-product basis, while the later two operate
+            on a cartesian-product when combined, so it does not make much sense to have both at the same time
+
         See also
         --------
         * :py:meth:`query_images_nifti_paths`
         * :py:meth:`query_images_companions_paths`
         """
+        if len(query.sub_ses) > 0 and (
+            (len(query.subjects) > 0) or (len(query.sessions) > 0)
+        ):
+            raise BIDSException(
+                "querying for both cross-product subjects-sessions pairs and cartesian-product of subjects and sessions does not make sense"
+            )
+
         filtered_subjects = (
             self.all_subjects()
-            if len(query.subjects) == 0
-            else (self.subject_by_id(id) for id in query.subjects)
+            if len(query.subjects) == 0 and len(query.sub_ses) == 0
+            else (
+                self.subject_by_id(id)
+                for id in (query.subjects or query.sub_ses.keys())
+            )
         )
 
         for subject in filtered_subjects:
@@ -330,7 +347,11 @@ class BIDSDataset:
             filtered_sessions = (
                 subject.all_sessions()
                 if len(query.sessions) == 0
-                else (subject.session_by_id(id) for id in query.sessions)
+                and len(query.sub_ses.get(subject.id, set())) == 0
+                else (
+                    subject.session_by_id(id)
+                    for id in (query.sessions or query.sub_ses[subject.id])
+                )
             )
 
             for session in filtered_sessions:

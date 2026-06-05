@@ -1,4 +1,5 @@
 from re import escape
+from typing import Any
 
 import pytest
 
@@ -285,3 +286,85 @@ def test_suffix_str():
 
 def test_suffix_wildcard():
     assert ImageQuery(suffix="magnitude*").suffix == "magnitude*"
+
+
+@pytest.mark.parametrize(
+    ["input_sub_ses", "validated_sub_ses"],
+    [
+        ([], {}),
+        ({}, {}),
+        ([("sub-1", "ses-A")], {"sub-1": {"ses-A"}}),
+        (
+            [("sub-1", "ses-A"), ("sub-2", "ses-A")],
+            {"sub-1": {"ses-A"}, "sub-2": {"ses-A"}},
+        ),
+        (
+            [
+                ("sub-1", "ses-A"),
+                ("sub-1", "ses-B"),
+                ("sub-2", "ses-A"),
+                ("sub-1", "ses-C"),
+            ],
+            {
+                "sub-1": {"ses-A", "ses-B", "ses-C"},
+                "sub-2": {"ses-A"},
+            },
+        ),
+        # NOTE: it is debatable whether having duplicated subject/session pairs should be
+        # treated as an error. For now it's not the case but it may make sense, it's just
+        # that it's not fundamentally harmful to accept them and it may be
+        # more convenient to accept them than having to make sure they're
+        # not duplicated in the calling-code.
+        ([("sub-1", "ses-A"), ("sub-1", "ses-A")], {"sub-1": {"ses-A"}}),
+        # Just passthrough for dict[id, set[id]]
+        (
+            {
+                "sub-1": {"ses-A", "ses-B", "ses-C"},
+                "sub-2": {"ses-A"},
+            },
+            {
+                "sub-1": {"ses-A", "ses-B", "ses-C"},
+                "sub-2": {"ses-A"},
+            },
+        ),
+    ],
+)
+def test_sub_ses_valid_forms(
+    input_sub_ses: Any, validated_sub_ses: dict[SubjectId, set[SessionId]]
+):
+    assert ImageQuery(sub_ses=input_sub_ses).sub_ses == validated_sub_ses
+
+
+@pytest.mark.parametrize(
+    ["input_sub_ses", "err_msg"],
+    [
+        # Dict directly with session ID as value instead of set of session IDs (even if only one is provided)
+        (
+            {"sub-1": "ses-A"},
+            "invalid subject/session pair(s) ({'sub-1': 'ses-A'}): field \"sub-1\": Input should be a valid set",
+        ),
+        # invalid subject ID in list-form
+        (
+            [("sub1", "ses-A")],
+            "invalid subject/session pair(s) ({'sub1': {'ses-A'}}): field \"sub1\": String should match pattern '^sub-[a-zA-Z0-9]+$'",
+        ),
+        # invalid session ID in list-form
+        (
+            [("sub-1", "sesA")],
+            "invalid subject/session pair(s) ({'sub-1': {'sesA'}}): field \"sub-1\": String should match pattern '^ses-[a-zA-Z0-9]+$'",
+        ),
+        # invalid subject ID in dict-form
+        (
+            {"sub1": {"ses-A"}},
+            "invalid subject/session pair(s) ({'sub1': {'ses-A'}}): field \"sub1\": String should match pattern '^sub-[a-zA-Z0-9]+$'",
+        ),
+        # invalid session ID in dict-form
+        (
+            {"sub-1": {"sesA"}},
+            "invalid subject/session pair(s) ({'sub-1': {'sesA'}}): field \"sub-1\": String should match pattern '^ses-[a-zA-Z0-9]+$'",
+        ),
+    ],
+)
+def test_invalid_sub_ses(input_sub_ses: Any, err_msg: str):
+    with pytest.raises(BIDSException, match=escape(err_msg)):
+        ImageQuery(sub_ses=input_sub_ses)

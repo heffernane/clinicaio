@@ -52,8 +52,8 @@ class ImageQuery:
     .. code-block:: python
 
             image_query = ImageQuery(
-                    subjects=["sub-ADNI027S0074"],
-                    sessions=["ses-M000"],
+                    subjects={"sub-ADNI027S0074"},
+                    sessions={"ses-M000"},
                     data_type=DataType.PET,
                     entities={"trc": "18FFDG", "rec": "coregiso8"},
                     suffix="pet",
@@ -63,6 +63,7 @@ class ImageQuery:
 
     subjects: set[SubjectId]
     sessions: set[SessionId]
+    sub_ses: dict[SubjectId, set[SessionId]]
     data_type: Optional[DataType]
     entities: Entities
     suffix: Optional[str]
@@ -72,6 +73,9 @@ class ImageQuery:
         *,
         subjects: Optional[Iterable[SubjectId]] = None,
         sessions: Optional[Iterable[SessionId]] = None,
+        sub_ses: Optional[
+            list[tuple[SubjectId, SessionId]] | dict[SubjectId, set[SessionId]]
+        ] = None,
         data_type: Optional[DataType] = None,
         # { "trc": "11CPIB", "run": "1"}
         # or "trc-11CPIB_run-1"
@@ -80,31 +84,52 @@ class ImageQuery:
         # +/- modality
         suffix: Optional[str] = None,
     ):
-        def validate_str(str_type: Any, s: str, err_prefix: str) -> Any:
+        def validate_value(value_type: Any, value: Any, err_prefix: str) -> Any:
             try:
-                return TypeAdapter(str_type).validate_python(s)
+                return TypeAdapter(value_type).validate_python(value)
             except PydanticError as e:
-                raise BIDSException._from_pydantic(f"{err_prefix} ({s})", e)
+                raise BIDSException._from_pydantic(f"{err_prefix} ({value})", e)
 
         self.subjects = (
             set()
             if subjects is None
             else set(
-                validate_str(SubjectId, id, "invalid subject ID") for id in subjects
+                validate_value(SubjectId, id, "invalid subject ID") for id in subjects
             )
         )
         self.sessions = (
             set()
             if sessions is None
             else set(
-                validate_str(SessionId, id, "invalid session ID") for id in sessions
+                validate_value(SessionId, id, "invalid session ID") for id in sessions
             )
         )
+
+        if sub_ses is None:
+            sub_ses = {}
+
+        # Keep the original one around so that the error message makes sense later.
+        orig_sub_ses = sub_ses
+
+        if isinstance(sub_ses, list):
+            d: dict[SubjectId, set[SessionId]] = {}
+
+            for subject, session in sub_ses:
+                d.setdefault(subject, set()).add(session)
+
+            sub_ses = d
+        self.sub_ses = validate_value(
+            dict[SubjectId, set[SessionId]], sub_ses, "invalid subject/session pair(s)"
+        )
+        if any(len(sessions) == 0 for sessions in self.sub_ses.values()):
+            raise BIDSException(
+                f"Found a subject without an associated session in its pair, in {orig_sub_ses}"
+            )
+
         if not ((data_type is None) or (type(data_type) == DataType)):
             raise BIDSException(
                 f"invalid type {type(data_type)} for data_type argument"
             )
-
         self.data_type = data_type
 
         self.entities = Entities.from_any(entities)

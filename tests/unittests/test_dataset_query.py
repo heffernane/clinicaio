@@ -1,13 +1,14 @@
 import os
 from pathlib import Path
+from re import escape
 
 import pytest
-from _utils import _setup_dataset_description
+from _utils import _get_dataset_description, _setup_dataset_description
 from pyfakefs.fake_filesystem import FakeFilesystem
 
 from clinicaio.dataset import BIDSDataset
 from clinicaio.image_query import ImageQuery
-from clinicaio.types import DataType, FileExtension
+from clinicaio.types import BIDSException, DataType, FileExtension, SessionId, SubjectId
 
 
 @pytest.fixture
@@ -281,7 +282,7 @@ def test_query_images(
 
 
 def test_query_suffix_wildcard(fakefs: FakeFilesystem):
-    bids_path = Path("/tmp/bids_test")
+    bids_path = Path("/tmp/bids_test_suffix_wildcard")
 
     _setup_dataset_description(fakefs, bids_path)
     fakefs.create_file(
@@ -394,3 +395,119 @@ def test_query_companion_files(fakefs: FakeFilesystem):
         bids_path / "sub-2/anat/sub-2_task-rest_sfx2.tsv",
         bids_path / "sub-2/anat/sub-2_task-rest_sfx3.tsv",
     ]
+
+
+def test_query_cross_versus_cartesian_product(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test_product")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    """
+    Depending on the case, either the cross-product of subject and session pairs is
+    wanted (query.sub_ses is used):
+
+     abc <== subjects
+    1xx_
+    2_x_
+    3___
+    ^
+    sessions
+
+    with query.sub_ses={a: {1}, b: {1, 2}}
+
+    Or the cartesian-product (which can/could be expressed as a cross-product but it's inconvenient/inefficient)
+    by defining both query.subjects and query.sessions:
+
+     abc <== subjects
+    1xx_
+    2xx_
+    3___
+    ^
+    sessions
+
+    with query.subjects={a, b} and query.sessions={1, 2}
+
+    But having both set at the same time does not make sense (hence the next test).
+    """
+
+    paths = []
+
+    for sub in (f"sub-{c}" for c in "abc"):
+        for ses in (f"ses-{n}" for n in [1, 2, 3]):
+            path = bids_path / sub / ses / "anat" / f"{sub}_{ses}_sfx.nii.gz"
+            fakefs.create_file(path)
+            paths.append(path)
+
+    assert len(paths) == 9
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
+    )
+
+    assert sorted(
+        dataset.query_images_nifti_paths(
+            ImageQuery(sub_ses={"sub-a": {"ses-1"}, "sub-b": {"ses-1", "ses-2"}})
+        )
+    ) == [
+        bids_path / "sub-a/ses-1/anat/sub-a_ses-1_sfx.nii.gz",
+        bids_path / "sub-b/ses-1/anat/sub-b_ses-1_sfx.nii.gz",
+        bids_path / "sub-b/ses-2/anat/sub-b_ses-2_sfx.nii.gz",
+    ]
+
+    assert sorted(
+        dataset.query_images_nifti_paths(
+            ImageQuery(subjects={"sub-a", "sub-b"}, sessions={"ses-1", "ses-2"})
+        )
+    ) == [
+        bids_path / "sub-a/ses-1/anat/sub-a_ses-1_sfx.nii.gz",
+        bids_path / "sub-a/ses-2/anat/sub-a_ses-2_sfx.nii.gz",
+        bids_path / "sub-b/ses-1/anat/sub-b_ses-1_sfx.nii.gz",
+        bids_path / "sub-b/ses-2/anat/sub-b_ses-2_sfx.nii.gz",
+    ]
+
+
+@pytest.mark.parametrize(
+    ["sub_ses", "subjects", "sessions"],
+    [
+        ({"sub-A": {"ses-1", "ses-2"}, "sub-B": {"ses-1", "ses-2"}}, {"sub-1"}, set()),
+        ({"sub-A": {"ses-1", "ses-2"}, "sub-B": {"ses-1", "ses-2"}}, set(), {"ses-1"}),
+        (
+            {"sub-A": {"ses-1", "ses-2"}, "sub-B": {"ses-1", "ses-2"}},
+            {"sub-A"},
+            {"ses-1"},
+        ),
+    ],
+)
+def test_query_cross_xor_cartesian_product(
+    sub_ses: dict[SubjectId, set[SessionId]],
+    subjects: set[SubjectId],
+    sessions: set[SessionId],
+):
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+
+    with pytest.raises(
+        BIDSException,
+        match="querying for both cross-product subjects-sessions pairs and cartesian-product of subjects and sessions does not make sense",
+    ):
+        # https://docs.python.org/3/reference/expressions.html#yield-expressions
+        # The function does not start executing at all if it is a generator function
+        # (i.e. there's a "yield" in the function body) until the first iteration/next() begins,
+        # which is not intuitive -- hence the list(...) part
+        list(
+            dataset.query_images(
+                ImageQuery(subjects=subjects, sessions=sessions, sub_ses=sub_ses)
+            )
+        )
+
+
+def test_query_sub_ses_pair_no_sessions():
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+    dataset.add_subject("sub-1", None)
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "Found a subject without an associated session in its pair, in {'sub-1': set()}"
+        ),
+    ):
+        dataset.query_images(ImageQuery(sub_ses={"sub-1": set()}))
