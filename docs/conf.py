@@ -58,6 +58,7 @@ autoapi_options = [
     # "imported-members",
 ]
 autoapi_python_class_content = "both"
+autoapi_own_page_level = "method"
 
 
 # -- Options for HTML output -------------------------------------------------
