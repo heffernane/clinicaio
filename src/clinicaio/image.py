@@ -27,11 +27,26 @@ class Image:
 
     @cached_property
     def json_sidecar(self) -> dict[str, Any]:
+        """
+        Obtains the content of this image's JSON sidecar file, as defined in the BIDS specification.
+
+        Raises
+        ------
+        OSError
+            if the JSON sidecar does not exist
+        BIDSException
+            if the JSON sidecar's content is invalid
+        """
+
         import json
 
         sidecar_path = self.get_image_companion_file_path(FileExtension.JSON)
         with open(sidecar_path, mode="r") as f:
-            json_dict = json.load(f)
+            try:
+                json_dict = json.load(f)
+            except json.JSONDecodeError as e:
+                raise BIDSException(f"could not parse JSON sidecar file: {e}")
+
             if not isinstance(json_dict, dict):
                 raise BIDSException(
                     f"expected JSON sidecar {sidecar_path} to contain an object as root node"

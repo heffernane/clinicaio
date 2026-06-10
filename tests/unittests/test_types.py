@@ -11,6 +11,7 @@ from clinicaio.types import (
     BIDSException,
     DataType,
     FileExtension,
+    Label,
     SessionId,
     SubjectId,
     Suffix,
@@ -124,3 +125,42 @@ def test_version_to_str():
 )
 def test_wrappers_to_str(wrapper_type: type, string: str):
     assert TypeAdapter(wrapper_type).validate_python(string) == string
+
+
+def test_file_extension_is_nifti():
+    assert FileExtension.NII.is_nifti()
+    assert FileExtension.NII_GZ.is_nifti()
+    assert len([ext for ext in iter(FileExtension) if ext.is_nifti()]) == 2
+    assert not FileExtension.JSON.is_nifti()
+
+
+@pytest.mark.parametrize(
+    ["enum_type"],
+    [
+        (DataType,),
+        (FileExtension,),
+    ],
+)
+def test_enum_repr(enum_type: Any):
+    for v in iter(enum_type):
+        assert repr(v) == f"'{v}'"
+
+
+def test_empty_label():
+    with pytest.raises(BIDSException, match=escape("BIDS label can't be empty")):
+        Label("")
+
+
+def test_label_alpha_non_ascii():
+    with pytest.raises(
+        BIDSException, match=escape("BIDS label aéa must be all [a-zA-Z0-9] characters")
+    ):
+        Label("aéa")
+
+
+def test_label_non_alnum():
+    with pytest.raises(
+        BIDSException,
+        match=escape("BIDS label bbb33^-aa must be all [a-zA-Z0-9] characters"),
+    ):
+        Label("bbb33^-aa")

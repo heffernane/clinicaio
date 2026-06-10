@@ -20,11 +20,6 @@ def fakefs(fs):
     yield fs
 
 
-@pytest.fixture
-def bids_path():
-    return Path("/tmp/bids_test")
-
-
 def test_add_session(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
     subject = dataset.add_subject("sub-001", None)
@@ -405,6 +400,15 @@ def test_implicit_session(fakefs: FakeFilesystem):
             for image in images
         )
 
+    assert [
+        str(image.get_nifti_image_path().relative_to(bids_path))
+        for image in sub1.all_images()
+    ] == [
+        "sub-1/anat/sub-1_sfx.nii.gz",
+        "sub-1/anat/sub-1_task-rest.nii.gz",
+        "sub-1/pet/sub-1_task-rest_sfx2.nii",
+    ]
+
     # Session with explicit ID/folder level
     sub2 = dataset.subject_by_id("sub-2")
     assert sub2 is not None
@@ -446,7 +450,6 @@ def test_implicit_session(fakefs: FakeFilesystem):
             {"a": None, "bcd": "4"},
         ),
     ]:
-        print((entities, suffix, ext, scan_info), images)
         assert any(
             image.entities == Entities.from_dict(entities)
             and image.suffix == suffix
@@ -455,3 +458,18 @@ def test_implicit_session(fakefs: FakeFilesystem):
             and image.data_type == data_type
             for image in images
         )
+
+    print(
+        [
+            image.get_nifti_image_path().relative_to(bids_path)
+            for image in sub2.all_images()
+        ]
+    )
+    assert [
+        str(image.get_nifti_image_path().relative_to(bids_path))
+        for image in sub2.all_images()
+    ] == [
+        "sub-2/ses-A/anat/sub-2_ses-A_sfx.nii.gz",
+        "sub-2/ses-A/anat/sub-2_ses-A_task-rest.nii.gz",
+        "sub-2/ses-A/pet/sub-2_ses-A_task-rest_sfx2.nii",
+    ]

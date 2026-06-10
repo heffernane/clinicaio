@@ -320,6 +320,63 @@ def test_read_dataset_propagate_sessions_exceptions(
         )
 
 
+def test_read_dataset_invalid_session_id(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
+    fakefs.create_dir(bids_path / "sub-001" / "ses-é")
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "got exception while adding subject sub-001 and populating its sessions: "
+            + "Found invalid session ID ses-é: String should match pattern '^ses-[a-zA-Z0-9]+$'"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(
+            bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
+        )
+
+
+def test_read_dataset_implicit_session_child_error(
+    fakefs: FakeFilesystem, bids_path: Path
+):
+    _setup_dataset_description(fakefs, bids_path)
+    fakefs.create_file(bids_path / "sub-001/sub-001_scans.tsv", contents="a\tb\n1\t2")
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "got exception while adding subject sub-001 and populating its sessions: "
+            "got exception while adding session without ID/dedicated folder and populating its images: "
+            "could not populate images scans info from TSV file /tmp/bids_test/sub-001/sub-001_scans.tsv: "
+            "dataframe did not have required filename column"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(
+            bids_path, subjects_info=False, sessions_info=False, image_scans_info=True
+        )
+
+
+def test_read_dataset_sessions_tsv(fakefs: FakeFilesystem, bids_path: Path):
+    _setup_dataset_description(fakefs, bids_path)
+    fakefs.create_dir(bids_path / "sub-001/ses-A/")
+    fakefs.create_dir(bids_path / "sub-001/ses-B/")
+    fakefs.create_file(
+        bids_path / "sub-001/sub-001_sessions.tsv", contents="a\tb\n1\t2"
+    )
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "got exception while adding subject sub-001 and populating its sessions: "
+            "could not populate sessions info from TSV file /tmp/bids_test/sub-001/sub-001_sessions.tsv: "
+            "dataframe did not have required session_id column"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(
+            bids_path, subjects_info=False, sessions_info=True, image_scans_info=False
+        )
+
+
 def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 

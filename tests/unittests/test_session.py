@@ -1,12 +1,17 @@
+import itertools
 import os
 from pathlib import Path
 from re import escape
 
 import pytest
 from _utils import _get_dataset_description, _setup_dataset_description
+from pandas import DataFrame
 from pyfakefs.fake_filesystem import FakeFilesystem
 
 from clinicaio.dataset import BIDSDataset
+from clinicaio.entities import Entities
+from clinicaio.image import Image
+from clinicaio.session import Session
 from clinicaio.types import BIDSException, DataType, FileExtension
 
 
@@ -84,3 +89,220 @@ def test_write_image_parent_directories(fakefs: FakeFilesystem):
         "dataset_description.json",
         "sub-001",
     ]
+
+
+def test_images_count(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    ses_path = bids_path / "sub-1/ses-A/"
+    fakefs.create_file(ses_path / "anat/sub-1_ses-A_task-rest_sfx1.nii.gz")
+    fakefs.create_file(ses_path / "anat/sub-1_ses-A_task-rest_sfx2.nii.gz")
+    fakefs.create_file(ses_path / "pet/sub-1_ses-A_task-rest_sfx3.nii.gz")
+    _setup_dataset_description(fakefs, bids_path)
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
+    )
+
+    assert len(list(dataset.all_images())) == 3
+
+    subject = dataset.subject_by_id("sub-1")
+    assert subject is not None
+    session = subject.session_by_id("ses-A")
+    assert session is not None
+
+    assert list(session.images_by_data_type(DataType.FMAP)) == []
+    assert session.images_count(DataType.FMAP) == 0
+    assert list(
+        map(Image.get_nifti_image_path, session.images_by_data_type(DataType.PET))
+    ) == [
+        bids_path / "sub-1/ses-A/pet/sub-1_ses-A_task-rest_sfx3.nii.gz",
+    ]
+    assert session.images_count(DataType.PET) == 1
+    assert list(
+        map(Image.get_nifti_image_path, session.images_by_data_type(DataType.ANAT))
+    ) == list(
+        map(
+            lambda path: bids_path / "sub-1/ses-A" / path,
+            [
+                "anat/sub-1_ses-A_task-rest_sfx1.nii.gz",
+                "anat/sub-1_ses-A_task-rest_sfx2.nii.gz",
+            ],
+        )
+    )
+    assert session.images_count(DataType.ANAT) == 2
+
+    assert session.images_count() == 3
+
+
+def test_write_image_invalid_file_extension(fakefs: FakeFilesystem):
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+    subject = dataset.add_subject("sub-01", None)
+    session = subject.add_session("ses-A", None)
+
+    with pytest.raises(
+        BIDSException,
+        match="provided non-NIFTI file extension json when adding image to session",
+    ):
+        session.write_image(
+            # Note the non-NIFTI file extension
+            DataType.PET,
+            FileExtension.JSON,
+            entities={},
+            suffix=None,
+            scan_info=None,
+        )
+
+
+def test_write_image_invalid_suffix(fakefs: FakeFilesystem):
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+    subject = dataset.add_subject("sub-01", None)
+    session = subject.add_session("ses-A", None)
+
+    with pytest.raises(
+        BIDSException,
+        match=escape("invalid suffix: String should match pattern '^[a-zA-Z0-9]+$'"),
+    ):
+        session.write_image(
+            # Note the invalid suffix
+            DataType.PET,
+            FileExtension.NII_GZ,
+            entities={},
+            suffix="é",
+            scan_info=None,
+        )
+
+
+def test_scans_info_df_no_filename_column():
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+    subject = dataset.add_subject("sub-01", None)
+    session = subject.add_session("ses-A", None)
+
+    with pytest.raises(
+        BIDSException, match="dataframe did not have required filename column"
+    ):
+        session.populate_image_scans_info_from_df(DataFrame({"a": [1, 2], "b": [3, 4]}))
+
+
+def test_scans_info_df_none_filename():
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+    subject = dataset.add_subject("sub-01", None)
+    session = subject.add_session("ses-A", None)
+    image = session._add_image(
+        DataType.PET,
+        FileExtension.NII_GZ,
+        entities=Entities.from_dict({}),
+        suffix="sfx",
+        scan_info=None,
+    )
+    assert image.parent_session is session
+
+    session.populate_image_scans_info_from_df(
+        DataFrame(
+            {
+                "a": ["1", "2"],
+                "b": ["3", "4"],
+                # Note the None filename
+                "filename": [None, "pet/sub-01_ses-A_sfx.nii.gz"],
+            }
+        )
+    )
+
+    assert image.scan_info.all_fields() == {"a": "2", "b": "4"}
+
+
+def test_scans_info_df_missing_data_type_dir():
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+    subject = dataset.add_subject("sub-01", None)
+    session = subject.add_session("ses-A", None)
+    image = session._add_image(
+        DataType.PET,
+        FileExtension.NII_GZ,
+        entities=Entities.from_dict({}),
+        suffix="sfx",
+        scan_info=None,
+    )
+    assert image.parent_session is session
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "expected image/scan filename of format <data_type>/<...> for sub-01_ses-A_sfx.nii.gz in dataframe"
+        ),
+    ):
+        session.populate_image_scans_info_from_df(
+            DataFrame(
+                {
+                    "a": ["2"],
+                    "b": ["4"],
+                    "filename": ["sub-01_ses-A_sfx.nii.gz"],
+                }
+            )
+        )
+
+    assert image.scan_info.all_fields() == {}
+
+
+def test_scans_info_df_invalid_data_type():
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+    subject = dataset.add_subject("sub-01", None)
+    session = subject.add_session("ses-A", None)
+    image = session._add_image(
+        DataType.PET,
+        FileExtension.NII_GZ,
+        entities=Entities.from_dict({}),
+        suffix="sfx",
+        scan_info=None,
+    )
+    assert image.parent_session is session
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "expected valid data type as first folder of filename PET/sub-01_ses-A_sfx.nii.gz in dataframe"
+        ),
+    ):
+        session.populate_image_scans_info_from_df(
+            DataFrame(
+                {
+                    "a": ["2"],
+                    "b": ["4"],
+                    "filename": ["PET/sub-01_ses-A_sfx.nii.gz"],
+                }
+            )
+        )
+
+    assert image.scan_info.all_fields() == {}
+
+
+def test_scans_info_df_missing_filename_sub_ses_prefix():
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+    subject = dataset.add_subject("sub-01", None)
+    session = subject.add_session("ses-A", None)
+    image = session._add_image(
+        DataType.PET,
+        FileExtension.NII_GZ,
+        entities=Entities.from_dict({}),
+        suffix="sfx",
+        scan_info=None,
+    )
+    assert image.parent_session is session
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "expected valid data type as first folder of filename PET/sub-1_ses-A_sfx.nii.gz in dataframe"
+        ),
+    ):
+        session.populate_image_scans_info_from_df(
+            DataFrame(
+                {
+                    "a": ["2"],
+                    "b": ["4"],
+                    # Note: sub-01 vs sub-1
+                    "filename": ["PET/sub-1_ses-A_sfx.nii.gz"],
+                }
+            )
+        )
+
+    assert image.scan_info.all_fields() == {}

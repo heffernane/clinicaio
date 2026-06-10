@@ -80,6 +80,7 @@ class Session:
         data_type: DataType,
         nifti_extension: FileExtension,
         entities: Entities,
+        *,
         suffix: Optional[Suffix],
         scan_info: Optional[ImageScanInfo],
     ) -> Image:
@@ -137,7 +138,11 @@ class Session:
                 raise BIDSException._from_pydantic("invalid suffix", e)
 
         image = self._add_image(
-            data_type, nifti_extension, Entities.from_any(entities), suffix, scan_info
+            data_type,
+            nifti_extension,
+            Entities.from_any(entities),
+            suffix=suffix,
+            scan_info=scan_info,
         )
 
         data_type_folder_path = self._get_full_path() / f"{data_type}"
@@ -180,7 +185,8 @@ class Session:
             if image_filename is None:
                 continue
             try:
-                data_type, image_basename = str(image_filename).split(
+                # Note: the split happens from the end to allow having a datatype with slashes
+                data_type, image_basename = str(image_filename).rsplit(
                     sep="/", maxsplit=1
                 )
             except ValueError:
