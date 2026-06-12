@@ -306,3 +306,137 @@ def test_scans_info_df_missing_filename_sub_ses_prefix():
         )
 
     assert image.scan_info.all_fields() == {}
+
+
+def test_skipped_invalid_datatype_or_no_file_extension(fakefs: FakeFilesystem):
+    image_paths = [
+        "sub-1/ses-A/pèt/sub-1_ses-A_task-rest_sfx.nii.gz",
+        "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx",
+    ]
+
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    for path in image_paths:
+        fakefs.create_file(bids_path / path)
+
+    global checked_unhandled_entries
+    checked_unhandled_entries = False
+
+    def unhandled_entries(paths: list[str]):
+        assert sorted(paths) == sorted(
+            [
+                "sub-1/ses-A/pèt",
+                "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx",
+            ]
+        )
+
+        global checked_unhandled_entries
+        checked_unhandled_entries = True
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path,
+        subjects_info=False,
+        sessions_info=False,
+        image_scans_info=False,
+        _report_unhandled_entries=unhandled_entries,
+    )
+    assert checked_unhandled_entries
+
+    assert list(dataset.all_images()) == []
+
+
+def test_non_directory_data_type(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    # Note the fact it's created as a file instead of a directory
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat")
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "got exception while adding subject sub-1 and populating its sessions: "
+            "got exception while adding session ses-A and populating its images: "
+            "Found data type entry anat that was not a directory"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(
+            bids_path,
+            subjects_info=False,
+            sessions_info=False,
+            image_scans_info=False,
+        )
+
+
+def test_missing_image_prefix(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/task-rest_sfx.nii.gz")
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "got exception while adding subject sub-1 and populating its sessions: "
+            "got exception while adding session ses-A and populating its images: "
+            "expected anat/task-rest_sfx.nii.gz filename to start with sub-1_ses-A_ due to its placement in the BIDS directory hierarchy"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(
+            bids_path,
+            subjects_info=False,
+            sessions_info=False,
+            image_scans_info=False,
+        )
+
+
+def test_missing_image_prefix_no_session(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    fakefs.create_file(bids_path / "sub-1/anat/task-rest_sfx.nii.gz")
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "got exception while adding subject sub-1 and populating its sessions: "
+            "got exception while adding session without ID/dedicated folder and populating its images: "
+            "expected anat/task-rest_sfx.nii.gz filename to start with sub-1_ due to its placement in the BIDS directory hierarchy"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(
+            bids_path,
+            subjects_info=False,
+            sessions_info=False,
+            image_scans_info=False,
+        )
+
+
+def test_invalid_image_filename(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    fakefs.create_file(bids_path / "sub-1/anat/sub-1_tàsk-rest_sfx.nii.gz")
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "got exception while adding subject sub-1 and populating its sessions: "
+            "got exception while adding session without ID/dedicated folder and populating its images: "
+            "Found invalid image filename sub-1_tàsk-rest_sfx.nii.gz in folder anat: "
+            "found invalid entities for image filename tàsk-rest_sfx.nii.gz: "
+            "BIDS label tàsk must be all [a-zA-Z0-9] characters"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(
+            bids_path,
+            subjects_info=False,
+            sessions_info=False,
+            image_scans_info=False,
+        )

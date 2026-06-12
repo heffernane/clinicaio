@@ -359,8 +359,13 @@ def test_query_companion_files(fakefs: FakeFilesystem):
     # Only NIFTI
     fakefs.create_file(bids_path / "sub-2/anat/sub-2_task-rest_sfx3.nii.gz")
 
+    global checked_unhandled_entries
+    checked_unhandled_entries = False
+
     def unhandled_entries(paths: list[str]):
         assert len(paths) == 0, repr(paths)
+        global checked_unhandled_entries
+        checked_unhandled_entries = True
 
     dataset = BIDSDataset.populate_from_dir(
         bids_path,
@@ -369,6 +374,7 @@ def test_query_companion_files(fakefs: FakeFilesystem):
         image_scans_info=False,
         _report_unhandled_entries=unhandled_entries,
     )
+    assert checked_unhandled_entries
 
     assert len(list(dataset.all_images())) == 5
     assert sorted(
