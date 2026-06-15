@@ -24,6 +24,12 @@ class ImageQuery:
             The subjects (by their IDs) to specifically keep. If empty, includes all of them.
     session :
             The subjects (by their IDs) to specifically keep. If empty, includes all of them.
+            Together with the ``subjects``, it forms a cartesian-product for filtering, meaning
+            that subjects and sessions are filtered independently, not pair-wise.
+    sub_ses :
+            The subject/session pairs to keep. This is a cross-product, meaning that only a
+            given subject/session pair matching one of the exact provided ones will match.
+            It must not be specified at the same time as ``subjects`` or ``sessions``.
     data_type :
             The data type of the image. If ``None``, all of them are kept.
     entities :
@@ -34,6 +40,13 @@ class ImageQuery:
             The suffix to specifically look for in the images. If ``None``, all of them are kept.
             This is a wildcard pattern using the syntax supported by :py:func:`fnmatch.fnmatchcase`.
 
+    Raises
+    ------
+    BIDSException
+        if both ``query.sub_ses`` and either ``query.subjects``or ``query.sessions`` are specified
+        at the same time: the former operates on a cross-product basis, while the later two operate
+        on a cartesian-product when combined, so it does not make much sense to have both at the same time
+
     Examples
     --------
 
@@ -41,6 +54,9 @@ class ImageQuery:
 
             ImageQuery(subjects=["sub-ADNI027S0074"])
             ImageQuery(subjects={"sub-ADNI027S0074"})
+            ImageQuery(sub_ses={"sub-ADNI027S0074": {"ses-A"}})
+            ImageQuery(sub_ses={"sub-ADNI027S0074": {"ses-A", "ses-B"}})
+            ImageQuery(sub_ses=[("sub-ADNI027S0074", "ses-A"), ("sub-AIBL1234", "ses-B")])
             ImageQuery(data_type=DataType.PET)
             ImageQuery(entities={"trc": "11CPIB", "task": "rest"})
             ImageQuery(entities=["trc-11CPIB", "task-rest"])
@@ -135,3 +151,10 @@ class ImageQuery:
         self.entities = Entities.from_any(entities)
 
         self.suffix = suffix
+
+        if len(self.sub_ses) > 0 and (
+            (len(self.subjects) > 0) or (len(self.sessions) > 0)
+        ):
+            raise BIDSException(
+                "querying for both cross-product subjects-sessions pairs and cartesian-product of subjects and sessions does not make sense"
+            )
