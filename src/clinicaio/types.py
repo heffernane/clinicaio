@@ -109,6 +109,12 @@ class CAPSDataType:
     def __str__(self) -> str:
         return "/".join(self.folders)
 
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, CAPSDataType) and self.folders == other.folders
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
 
 class BIDSDataType(str, Enum):
     """

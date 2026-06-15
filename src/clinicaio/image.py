@@ -48,7 +48,7 @@ class Image:
     #
     # So that means that for CAPS there is no nice way of handling it. For BIDS however the
     # filename can fully be re-created as it has only a canonical form.
-    _caps_exact_filename: Optional[str]
+    _caps_exact_filename_stem: Optional[str]
 
     suffix: Optional[Suffix] = None
 
@@ -145,7 +145,7 @@ class Image:
     def _get_image_base_full_path(
         self,
     ) -> Path:
-        if self._caps_exact_filename is None:
+        if self._caps_exact_filename_stem is None:
             entities = "" if len(self.entities) == 0 else f"{self.entities}"
             suffix = "" if self.suffix is None else f"{self.suffix}"
 
@@ -161,7 +161,7 @@ class Image:
             return (
                 self.parent_session._get_full_path()
                 / f"{self.data_type}"
-                / self._caps_exact_filename
+                / self._caps_exact_filename_stem
             )
 
     def get_nifti_image_path(self) -> Path:

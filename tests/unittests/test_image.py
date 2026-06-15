@@ -11,6 +11,7 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 from clinicaio.dataset import BIDSDataset
 from clinicaio.entities import Entities
 from clinicaio.image import Image
+from clinicaio.image_query import ImageQuery
 from clinicaio.types import BIDSDataType, BIDSException, FileExtension
 
 
@@ -154,3 +155,42 @@ def test_json_sidecar(fakefs: FakeFilesystem):
     # Make sure it actually is cached
     cached_sidecar = image.json_sidecar
     assert sidecar is cached_sidecar
+
+
+def test_image_path_caps_nii_gz(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    fakefs.create_file(
+        bids_path / "dataset_description.json",
+        contents='{"DatasetType": "raw", "BIDSVersion": "1.10.0", "Name": "foo", "CAPSVersion": "1.0"}',
+    )
+    img_path = bids_path / "subjects/sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz"
+    fakefs.create_file(img_path)
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path,
+        subjects_info=False,
+        sessions_info=False,
+        image_scans_info=False,
+        caps_dataset=True,
+    )
+
+    assert list(dataset.query_images_nifti_paths(ImageQuery())) == [
+        bids_path / "subjects/sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz"
+    ]
+
+    images = list(dataset.query_images(ImageQuery()))
+    assert len(images) == 1
+    image = images[0]
+    assert (
+        image.get_nifti_image_path()
+        == bids_path / "subjects/sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz"
+    )
+    assert (
+        image.get_image_companion_file_path(FileExtension.NII_GZ)
+        == bids_path / "subjects/sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz"
+    )
+    assert (
+        image.get_image_companion_file_path(FileExtension.TSV)
+        == bids_path / "subjects/sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.tsv"
+    )

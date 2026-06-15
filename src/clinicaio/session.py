@@ -131,7 +131,7 @@ class Session:
             suffix=suffix,
             scan_info=ImageScanInfo({}) if scan_info is None else scan_info,
             extra_labels=extra_labels,
-            _caps_exact_filename=None,
+            _caps_exact_filename_stem=None,
         )
 
         if data_type not in self._images:
@@ -379,7 +379,9 @@ class Session:
                     extra_labels=extra_labels,
                 )
                 if is_caps:
-                    image._caps_exact_filename = child_image.name
+                    image._caps_exact_filename_stem = child_image.name.removesuffix(
+                        f".{extension}"
+                    )
                 # https://bids-specification.readthedocs.io/en/stable/common-principles.html#uniqueness-of-data-files
                 # "If multiple extensions are permissible (for example, .nii and .nii.gz), there MUST only be one such
                 # file with the same entities, datatype and suffix"
