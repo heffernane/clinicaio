@@ -7,14 +7,12 @@ authors = [
     { name = "ARAMIS Lab" }
 ]
 maintainers = [
-    { name = "Clinica developers", email = "clinica.run@gmail.com>"},
+    { name = "ARAMIS Lab", email = "aramislab.fr@gmail.com"},
 ]
 readme = "README.md"
 packages = [{include = "clinicaio", from = "src"}]
 keywords = [
     "bids",
-    "image processing",
-    "machine learning",
     "neuroimaging",
     "neuroscience"
 ]
@@ -23,9 +21,17 @@ classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
-    "Topic :: Scientific/Engineering :: Image Processing"
 ]
 # ClinicaIO adopts the same Python version policy as Clinica itself, so the dependencies are
 # also impacted by it.
