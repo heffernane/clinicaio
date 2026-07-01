@@ -1,6 +1,5 @@
 from pathlib import Path
 from re import escape
-from typing import Iterable
 
 import pytest
 from _utils import _get_dataset_description, _make_tsv, _setup_dataset_description

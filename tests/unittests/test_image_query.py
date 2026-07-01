@@ -5,7 +5,7 @@ import pytest
 
 from clinicaio.entities import Entities, EntityKey, EntityValue
 from clinicaio.image_query import ImageQuery
-from clinicaio.types import BIDSException, DataType, SessionId, SubjectId, Suffix
+from clinicaio.types import BIDSException, DataType, SessionId, SubjectId
 
 # For convenience the ImageQuery constructor allows a variety of types for
 # its arguments, in a Python fashion. These tests ensure that each supported

@@ -1,4 +1,3 @@
-import itertools
 import os
 from pathlib import Path
 from re import escape
@@ -11,7 +10,6 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 from clinicaio.dataset import BIDSDataset
 from clinicaio.entities import Entities
 from clinicaio.image import Image
-from clinicaio.session import Session
 from clinicaio.types import BIDSException, DataType, FileExtension
 
 

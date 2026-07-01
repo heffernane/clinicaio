@@ -7,7 +7,7 @@ from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticError
 
 from .entities import Entities, EntitiesLike
-from .types import BIDSException, DataType, SessionId, SubjectId, Suffix
+from .types import BIDSException, DataType, SessionId, SubjectId
 
 
 @dataclass

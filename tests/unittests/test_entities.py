@@ -1,6 +1,5 @@
 import itertools
 from re import escape
-from typing import Callable
 
 import pytest
 
