@@ -222,7 +222,7 @@ class Session:
             raise ValueError(
                 "the dataframe did not have the required 'filename' column"
             )
-        
+
         is_caps = self.parent_subject.parent_dataset._is_caps()
 
         infos: list[dict[str, Any]] = scans_tsv_df.to_dict(orient="records")  # type: ignore
@@ -232,7 +232,7 @@ class Session:
                 continue
             try:
                 # Note: the split happens from the end to allow having a datatype with slashes
-                data_type, image_basename = str(image_filename).rsplit(
+                data_type_str, image_basename = str(image_filename).rsplit(
                     sep="/", maxsplit=1
                 )
             except ValueError as e:
@@ -241,7 +241,11 @@ class Session:
                 ) from e
 
             try:
-                data_type = CAPSDataType(data_type) if is_caps else BIDSDataType(data_type) 
+                data_type = (
+                    CAPSDataType(data_type_str)
+                    if is_caps
+                    else BIDSDataType(data_type_str)
+                )
             except ValueError as e:
                 raise ValueError(
                     f"expected valid data type as first folder of filename {image_filename} in dataframe"
@@ -318,6 +322,8 @@ class Session:
 
         # Populate the session's images, per-datatype
         for dir_name, dir_path in list_dirs:
+            data_type: DataType
+
             if is_caps:
                 # FIXME: TRY/EXCEPT
                 data_type = CAPSDataType(str(Path(dir_path).relative_to(session_path)))

@@ -187,10 +187,10 @@ def test_image_path_caps_nii_gz(fakefs: FakeFilesystem):
         == bids_path / "subjects/sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz"
     )
     assert (
-        image.get_image_companion_file_path(FileExtension.NII_GZ)
+        image.get_image_companion_path(FileExtension.NII_GZ)
         == bids_path / "subjects/sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz"
     )
     assert (
-        image.get_image_companion_file_path(FileExtension.TSV)
+        image.get_image_companion_path(FileExtension.TSV)
         == bids_path / "subjects/sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.tsv"
     )

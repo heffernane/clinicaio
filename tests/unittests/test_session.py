@@ -10,7 +10,7 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 from clinicaio.dataset import BIDSDataset
 from clinicaio.entities import Entities
 from clinicaio.image import Image
-from clinicaio.types import BIDSException, BIDSDataType, FileExtension
+from clinicaio.types import BIDSDataType, BIDSException, FileExtension
 
 
 # Rename the pyfakefs fixture so it's clearer what it actually is

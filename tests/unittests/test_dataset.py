@@ -633,6 +633,7 @@ def test_dataset_populate_no_info_by_default(
         with pytest.raises(Exception, match=escape(err_msg)):
             populate_dataset(bids_path)
 
+
 def test_read_caps_dataset(fakefs: FakeFilesystem):
     bids_path = Path("/tmp/bids_test")
 
@@ -729,3 +730,24 @@ def test_read_caps_dataset(fakefs: FakeFilesystem):
         )
         == 0
     )
+
+
+def test_read_no_subjects_dataset(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    dataset = BIDSDataset.populate_from_dir(
+        bids_path,
+        subjects_info=False,
+        sessions_info=False,
+        image_scans_info=False,
+        caps_dataset=False,
+    )
+    assert dataset.subjects_count() == 0
+    assert list(dataset.all_subjects()) == []
+    assert dataset.description == _get_dataset_description()
+    # BIDSDataset.populate_from_dir(bids_path, PopulateWhat.bids_no_info())
+    # BIDSDataset.populate_from_dir(bids_path, PopulateWhat.caps_no_info())
+    # BIDSDataset.populate_from_dir(bids_path, PopulateWhat.caps_with_info())
+    # BIDSDataset.populate_from_dir(bids_path, PopulateWhat(subjects=True, caps=True))

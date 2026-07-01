@@ -35,7 +35,6 @@ class Image:
     scan_info: ImageScanInfo
     """Non-empty only if enabled when reading the dataset with :py:meth:`BIDSDataset.populate_from_dir() <clinicaio.dataset.BIDSDataset.populate_from_dir>`."""
 
-
     extra_labels: set[str]
     # The unfortunate thing about supporting CAPS is that there is no consistency whatsoever with
     # regards to where the "extra" labels are placed. Here's some examples from Clinica's code:

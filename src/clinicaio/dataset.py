@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from functools import cached_property
 from pathlib import Path
-from typing import IO, Any, Callable, Iterable, Optional
+from typing import IO, Any, Callable, Iterable, Iterator, Optional
 
 from pandas import DataFrame
 from pydantic import TypeAdapter
@@ -256,8 +256,17 @@ class BIDSDataset:
 
         dataset = BIDSDataset(bids_path=bids_dir, description=description)
 
+        dir_scanner: Iterable[Any]
+        try:
+            dir_scanner = os.scandir(dataset._get_subjects_path())
+        except FileNotFoundError:
+            # It does not make much sense to have no subjects, but it does not hurt to allow it.
+            # Also we should be reaching here only for CAPS datasets, since for BIDS ones the subjects
+            # path is the root of the BIDS dataset, which already exists/has a dataset_description.json file.
+            dir_scanner = []
+
         # Populate subjects/subjects
-        for bids_child in os.scandir(dataset._get_subjects_path()):
+        for bids_child in dir_scanner:
             # Handled once all subjects have been read
             if bids_child.name == dataset._participants_tsv_file_name:
                 continue
