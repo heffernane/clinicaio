@@ -132,7 +132,7 @@ class Subject:
         )
 
         if "session_id" not in sessions_tsv_df.columns:
-            raise BIDSException(f"dataframe did not have required session_id column")
+            raise BIDSException("the dataframe did not have the required 'session_id' column")
 
         infos: list[dict[str, Any]] = sessions_tsv_df.to_dict(orient="records")  # type: ignore
         for info in infos:

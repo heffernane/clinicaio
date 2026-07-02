@@ -108,7 +108,7 @@ def test_read_participants_tsv_missing_id_column(
         contents=_make_tsv(["abc", "123"]),
     )
 
-    msg = f"could not populate subjects info from TSV file {tsv_path}: dataframe did not have required participant_id column"
+    msg = f"could not populate subjects info from TSV file {tsv_path}: the dataframe did not have the required 'participant_id' column"
     with pytest.raises(BIDSException, match=escape(msg)):
         BIDSDataset.populate_from_dir(
             bids_path, subjects_info=True, sessions_info=False, image_scans_info=False
@@ -348,7 +348,7 @@ def test_read_dataset_implicit_session_child_error(
             "got exception while adding subject sub-001 and populating its sessions: "
             "got exception while adding session without ID/dedicated folder and populating its images: "
             "could not populate images scans info from TSV file /tmp/bids_test/sub-001/sub-001_scans.tsv: "
-            "dataframe did not have required filename column"
+            "the dataframe did not have the required 'filename' column"
         ),
     ):
         BIDSDataset.populate_from_dir(
@@ -369,7 +369,7 @@ def test_read_dataset_sessions_tsv(fakefs: FakeFilesystem, bids_path: Path):
         match=escape(
             "got exception while adding subject sub-001 and populating its sessions: "
             "could not populate sessions info from TSV file /tmp/bids_test/sub-001/sub-001_sessions.tsv: "
-            "dataframe did not have required session_id column"
+            "the dataframe did not have the required 'session_id' column"
         ),
     ):
         BIDSDataset.populate_from_dir(

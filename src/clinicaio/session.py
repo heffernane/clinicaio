@@ -177,7 +177,7 @@ class Session:
         the information directly from :py:meth:`Session.write_image` should be favored.
         """
         if "filename" not in scans_tsv_df.columns:
-            raise BIDSException(f"dataframe did not have required filename column")
+            raise BIDSException("the dataframe did not have the required 'filename' column")
 
         infos: list[dict[str, Any]] = scans_tsv_df.to_dict(orient="records")  # type: ignore
         for info in infos:

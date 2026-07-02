@@ -227,7 +227,7 @@ def test_populate_sessions_info_from_df_missing_id_column(fakefs: FakeFilesystem
     subject = dataset.add_subject("sub-001", None)
 
     with pytest.raises(
-        BIDSException, match="dataframe did not have required session_id column"
+        BIDSException, match="the dataframe did not have the required 'session_id' column"
     ):
         df = DataFrame(
             [

@@ -88,7 +88,7 @@ class BIDSDataset:
 
         if "participant_id" not in participants_tsv_df.columns:
             raise BIDSException(
-                f"dataframe did not have required participant_id column"
+                "the dataframe did not have the required 'participant_id' column"
             )
 
         infos: list[dict[str, Any]] = participants_tsv_df.to_dict(orient="records")  # type: ignore

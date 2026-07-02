@@ -177,7 +177,7 @@ def test_scans_info_df_no_filename_column():
     session = subject.add_session("ses-A", None)
 
     with pytest.raises(
-        BIDSException, match="dataframe did not have required filename column"
+        BIDSException, match="the dataframe did not have the required 'filename' column"
     ):
         session.populate_image_scans_info_from_df(DataFrame({"a": [1, 2], "b": [3, 4]}))
 
