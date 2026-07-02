@@ -416,11 +416,11 @@ class BIDSDataset:
         See also
         --------
         * :py:meth:`query_images`
-        * :py:meth:`Image.get_image_companion_file_path() <clinicaio.image.Image.get_image_companion_file_path>`
+        * :py:meth:`Image.get_image_companion_path() <clinicaio.image.Image.get_image_companion_path>`
         """
         return (
             path
             for image in self.query_images(query)
-            if (path := image.get_image_companion_file_path(extension))
+            if (path := image.get_image_companion_path(extension))
             and ((not skip_missing) or path.exists())
         )

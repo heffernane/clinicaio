@@ -40,7 +40,7 @@ class Image:
 
         import json
 
-        sidecar_path = self.get_image_companion_file_path(FileExtension.JSON)
+        sidecar_path = self.get_image_companion_path(FileExtension.JSON)
         with open(sidecar_path, mode="r") as f:
             try:
                 json_dict = json.load(f)
@@ -124,9 +124,9 @@ class Image:
 
     def get_nifti_image_path(self) -> Path:
         """Returns the full path to this image's NIFTI file"""
-        return self.get_image_companion_file_path(self.nifti_extension)
+        return self.get_image_companion_path(self.nifti_extension)
 
-    def get_image_companion_file_path(self, extension: FileExtension) -> Path:
+    def get_image_companion_path(self, extension: FileExtension) -> Path:
         """
         BIDS is a format centered around organizing NIFTI image files, but NIFTI does not include
         all the information that one might want from a brain image or its acquisition process

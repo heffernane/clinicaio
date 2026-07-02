@@ -128,7 +128,7 @@ class Session:
         See also
         --------
         * :py:meth:`Image.get_nifti_image_path() <clinicaio.image.Image.get_nifti_image_path>`
-        * :py:meth:`Image.get_image_companion_file_path() <clinicaio.image.Image.get_image_companion_file_path>`
+        * :py:meth:`Image.get_image_companion_path() <clinicaio.image.Image.get_image_companion_path>`
         """
 
         if suffix is not None:
