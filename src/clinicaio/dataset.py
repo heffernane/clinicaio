@@ -127,7 +127,7 @@ class BIDSDataset:
     @classmethod
     def populate_from_dir(
         cls,
-        bids_dir: Path,
+        bids_dir: str | Path,
         *,
         subjects_info: bool,
         sessions_info: bool,
@@ -158,6 +158,8 @@ class BIDSDataset:
         BIDSException
                 Whenever an invalid (per BIDS specification) filename/path is encountered while walking the BIDS directory
         """
+        bids_dir = Path(bids_dir)
+
         unhandled_entries: set[str] = set()
 
         try:

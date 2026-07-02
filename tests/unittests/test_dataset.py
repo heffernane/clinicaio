@@ -550,3 +550,24 @@ def test_all_sessions_and_images(fakefs: FakeFilesystem, bids_path: Path):
         sorted(image.get_nifti_image_path() for image in dataset.all_images())
         == image_paths
     )
+
+def test_read_dataset_str_path(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    nifti_path = bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz"
+    fakefs.create_file(nifti_path)
+
+    dataset = BIDSDataset.populate_from_dir(
+        # NOTE: this is a string, not a path (which is the specific behavior we want to test here)
+        "/tmp/bids_test",
+        subjects_info=False,
+        sessions_info=False,
+        image_scans_info=False,
+    )
+
+    assert dataset.description == _get_dataset_description()
+    images = list(dataset.all_images())
+    assert len(images) == 1
+    assert images[0].get_nifti_image_path() == nifti_path
