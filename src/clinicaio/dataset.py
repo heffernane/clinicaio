@@ -196,7 +196,7 @@ class BIDSDataset:
                 )
 
             try:
-                subject = dataset.add_subject(id=subject_id, info=None)
+                subject = dataset.add_subject(id=subject_id)
 
                 unhandled_entries |= subject._populate_sessions_from_folder(
                     sessions_info=sessions_info, image_scans_info=image_scans_info
@@ -215,7 +215,7 @@ class BIDSDataset:
         _report_unhandled_entries(relative_unhandled_entries)
         return dataset
 
-    def add_subject(self, id: SubjectId, info: Optional[SubjectInfo]) -> Subject:
+    def add_subject(self, id: SubjectId, info: Optional[SubjectInfo] = None) -> Subject:
         try:
             TypeAdapter(SubjectId).validate_python(id)
         except PydanticError as e:

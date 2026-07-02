@@ -68,8 +68,8 @@ def test_write_image_parent_directories(fakefs: FakeFilesystem):
     bids_path = Path("/tmp/bids_test")
 
     dataset = BIDSDataset(bids_path, _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
-    session = subject.add_session("ses-A", None)
+    subject = dataset.add_subject("sub-001")
+    session = subject.add_session("ses-A")
 
     assert not fakefs.exists(bids_path)
 
@@ -135,8 +135,8 @@ def test_images_count(fakefs: FakeFilesystem):
 
 def test_write_image_invalid_file_extension(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-01", None)
-    session = subject.add_session("ses-A", None)
+    subject = dataset.add_subject("sub-01")
+    session = subject.add_session("ses-A")
 
     with pytest.raises(
         BIDSException,
@@ -154,8 +154,8 @@ def test_write_image_invalid_file_extension(fakefs: FakeFilesystem):
 
 def test_write_image_invalid_suffix(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-01", None)
-    session = subject.add_session("ses-A", None)
+    subject = dataset.add_subject("sub-01")
+    session = subject.add_session("ses-A")
 
     with pytest.raises(
         BIDSException,
@@ -173,8 +173,8 @@ def test_write_image_invalid_suffix(fakefs: FakeFilesystem):
 
 def test_scans_info_df_no_filename_column():
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-01", None)
-    session = subject.add_session("ses-A", None)
+    subject = dataset.add_subject("sub-01")
+    session = subject.add_session("ses-A")
 
     with pytest.raises(
         BIDSException, match="the dataframe did not have the required 'filename' column"
@@ -184,8 +184,8 @@ def test_scans_info_df_no_filename_column():
 
 def test_scans_info_df_none_filename():
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-01", None)
-    session = subject.add_session("ses-A", None)
+    subject = dataset.add_subject("sub-01")
+    session = subject.add_session("ses-A")
     image = session._add_image(
         DataType.PET,
         FileExtension.NII_GZ,
@@ -211,8 +211,8 @@ def test_scans_info_df_none_filename():
 
 def test_scans_info_df_missing_data_type_dir():
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-01", None)
-    session = subject.add_session("ses-A", None)
+    subject = dataset.add_subject("sub-01")
+    session = subject.add_session("ses-A")
     image = session._add_image(
         DataType.PET,
         FileExtension.NII_GZ,
@@ -243,8 +243,8 @@ def test_scans_info_df_missing_data_type_dir():
 
 def test_scans_info_df_invalid_data_type():
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-01", None)
-    session = subject.add_session("ses-A", None)
+    subject = dataset.add_subject("sub-01")
+    session = subject.add_session("ses-A")
     image = session._add_image(
         DataType.PET,
         FileExtension.NII_GZ,
@@ -275,8 +275,8 @@ def test_scans_info_df_invalid_data_type():
 
 def test_scans_info_df_missing_filename_sub_ses_prefix():
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-01", None)
-    session = subject.add_session("ses-A", None)
+    subject = dataset.add_subject("sub-01")
+    session = subject.add_session("ses-A")
     image = session._add_image(
         DataType.PET,
         FileExtension.NII_GZ,

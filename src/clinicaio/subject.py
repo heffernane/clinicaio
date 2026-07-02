@@ -33,7 +33,7 @@ class Subject:
     def _get_full_path(self) -> Path:
         return self.parent_dataset._get_full_path() / f"{self.id}"
 
-    def add_session(self, id: SessionId, info: Optional[SessionInfo]) -> Session:
+    def add_session(self, id: SessionId, info: Optional[SessionInfo] = None) -> Session:
         assert not isinstance(self._sessions, Session), (
             "Adding a named/ID-ed session to a subject that only has an implicit one (sub-<label>/<data_type>/... instead of sub-<label>/ses-<label>/<data type>) is not supported"
         )
@@ -195,7 +195,7 @@ class Subject:
                 )
 
             try:
-                session = self.add_session(id=session_id, info=None)
+                session = self.add_session(id=session_id)
 
                 unhandled_entries |= session._populate_images_from_folder(
                     image_scans_info=image_scans_info

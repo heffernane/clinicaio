@@ -507,7 +507,7 @@ def test_query_cross_xor_cartesian_product(
 
 def test_query_sub_ses_pair_no_sessions():
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    dataset.add_subject("sub-1", None)
+    dataset.add_subject("sub-1")
 
     with pytest.raises(
         BIDSException,

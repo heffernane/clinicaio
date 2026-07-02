@@ -383,7 +383,7 @@ def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
     assert dataset.subjects_count() == 0
     assert list(dataset.all_subjects()) == []
 
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
     assert dataset.subjects_count() == 1
     assert len(list(dataset.all_subjects())) == 1
     assert list(dataset.all_subjects())[0] is subject
@@ -398,13 +398,22 @@ def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
         BIDSException,
         match="tried to add subject of ID sub-001 but it already exists within this dataset",
     ):
-        dataset.add_subject("sub-001", None)
+        dataset.add_subject("sub-001")
 
 
 def test_add_subject_none_info(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
     subject = dataset.add_subject("sub-001", None)
+    assert subject.info.all_fields() == {}
+    assert subject.info.is_empty()
+
+
+def test_add_subject_none_info_implicit(fakefs: FakeFilesystem):
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+
+    # NOTE: no info is passed explicitely to the method
+    subject = dataset.add_subject("sub-001")
     assert subject.info.all_fields() == {}
     assert subject.info.is_empty()
 
@@ -427,7 +436,7 @@ def test_add_subject_invalid_id(fakefs: FakeFilesystem):
             "invalid subject ID sub-é: String should match pattern '^sub-[a-zA-Z0-9]+$'"
         ),
     ):
-        dataset.add_subject("sub-é", None)
+        dataset.add_subject("sub-é")
 
 
 def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem):

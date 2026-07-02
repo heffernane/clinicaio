@@ -21,7 +21,7 @@ def fakefs(fs):
 
 def test_add_session(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     assert subject.parent_dataset is dataset
     assert subject.id == "sub-001"
@@ -29,7 +29,7 @@ def test_add_session(fakefs: FakeFilesystem):
     assert list(subject.all_sessions()) == []
     assert subject.sessions_count() == 0
 
-    session = subject.add_session("ses-A", None)
+    session = subject.add_session("ses-A")
     assert session.id == "ses-A"
     assert session.parent_subject is subject
     assert session.images_count() == 0
@@ -44,7 +44,7 @@ def test_add_session(fakefs: FakeFilesystem):
 
 def test_add_session_invalid_id(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     assert subject.parent_dataset is dataset
     assert subject.id == "sub-001"
@@ -56,18 +56,18 @@ def test_add_session_invalid_id(fakefs: FakeFilesystem):
             "invalid session ID: String should match pattern '^ses-[a-zA-Z0-9]+$'"
         ),
     ):
-        subject.add_session("sess-A", None)
+        subject.add_session("sess-A")
 
 
 def test_add_session_already_existing_id(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     assert subject.parent_dataset is dataset
     assert subject.id == "sub-001"
     assert subject.info.is_empty()
 
-    session = subject.add_session("ses-A", None)
+    session = subject.add_session("ses-A")
     assert session.id == "ses-A"
     assert session.parent_subject is subject
     assert session.images_count() == 0
@@ -79,18 +79,37 @@ def test_add_session_already_existing_id(fakefs: FakeFilesystem):
             "tried to add session of ID ses-A but it already exists within this subject"
         ),
     ):
-        subject.add_session("ses-A", None)
+        subject.add_session("ses-A")
 
 
 def test_add_session_none_info(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     assert subject.parent_dataset is dataset
     assert subject.id == "sub-001"
     assert subject.info.is_empty()
 
-    session = subject.add_session("ses-A", None)
+    session = subject.add_session("ses-A")
+    assert session.id == "ses-A"
+    assert session.parent_subject is subject
+    assert session.images_count() == 0
+    assert list(session.all_images()) == []
+
+    assert session.info.is_empty()
+    assert len(session.info.all_fields()) == 0
+
+
+def test_add_session_none_info_implicit(fakefs: FakeFilesystem):
+    dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
+    subject = dataset.add_subject("sub-001")
+
+    assert subject.parent_dataset is dataset
+    assert subject.id == "sub-001"
+    assert subject.info.is_empty()
+
+    # NOTE: the info is not passed explicitely
+    session = subject.add_session("ses-A")
     assert session.id == "ses-A"
     assert session.parent_subject is subject
     assert session.images_count() == 0
@@ -102,7 +121,7 @@ def test_add_session_none_info(fakefs: FakeFilesystem):
 
 def test_add_session_provided_info(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     assert subject.parent_dataset is dataset
     assert subject.id == "sub-001"
@@ -136,7 +155,7 @@ def test_add_session_provided_info(fakefs: FakeFilesystem):
 
 def test_get_full_path(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     assert subject.parent_dataset is dataset
     assert subject.id == "sub-001"
@@ -147,7 +166,7 @@ def test_get_full_path(fakefs: FakeFilesystem):
 
 def test_session_by_id_invalid_id(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     assert subject.parent_dataset is dataset
     assert subject.id == "sub-001"
@@ -165,15 +184,15 @@ def test_session_by_id_invalid_id(fakefs: FakeFilesystem):
 
 def test_session_by_id_missing_session(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     assert subject.session_by_id("ses-001") is None
-    ses001 = subject.add_session("ses-001", None)
-    ses002 = subject.add_session("ses-002", None)
+    ses001 = subject.add_session("ses-001")
+    ses002 = subject.add_session("ses-002")
     # Although not recommended it is possible to have two session with such similar
     # IDs, considering that it's ses-<label> where label is composed of any arrangement
     # of ASCII letters and digits.
-    ses01 = subject.add_session("ses-01", None)
+    ses01 = subject.add_session("ses-01")
     assert subject.session_by_id("ses-001") is ses001
     assert subject.session_by_id("ses-002") is ses002
     assert subject.session_by_id("ses-01") is ses01
@@ -183,7 +202,7 @@ def test_session_by_id_missing_session(fakefs: FakeFilesystem):
 
 def test_subject_info(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     info1 = SubjectInfo(other_fields={})
     assert info1.is_empty()
@@ -224,7 +243,7 @@ def test_subject_info_invalid_session_id_field():
 
 def test_populate_sessions_info_from_df_missing_id_column(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
+    subject = dataset.add_subject("sub-001")
 
     with pytest.raises(
         BIDSException, match="the dataframe did not have the required 'session_id' column"
@@ -239,8 +258,8 @@ def test_populate_sessions_info_from_df_missing_id_column(fakefs: FakeFilesystem
 
 def test_populate_sessions_info_from_df_none_id_field(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
-    session = subject.add_session("ses-001", None)
+    subject = dataset.add_subject("sub-001")
+    session = subject.add_session("ses-001")
     assert session.parent_subject is subject
     assert session.info.is_empty()
 
@@ -262,8 +281,8 @@ def test_populate_sessions_info_from_df_none_id_field(fakefs: FakeFilesystem):
 
 def test_populate_sessions_info_from_df_invalid_id(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
-    session = subject.add_session("ses-001", None)
+    subject = dataset.add_subject("sub-001")
+    session = subject.add_session("ses-001")
     assert session.parent_subject is subject
     assert session.info.is_empty()
 
@@ -281,8 +300,8 @@ def test_populate_sessions_info_from_df_valid_id_missing_session(
     fakefs: FakeFilesystem,
 ):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
-    subject = dataset.add_subject("sub-001", None)
-    session = subject.add_session("ses-001", None)
+    subject = dataset.add_subject("sub-001")
+    session = subject.add_session("ses-001")
     assert session.parent_subject is subject
     assert session.info.is_empty()
 
@@ -347,7 +366,7 @@ def test_implicit_session(fakefs: FakeFilesystem):
             "Adding a named/ID-ed session to a subject that only has an implicit one (sub-<label>/<data_type>/... instead of sub-<label>/ses-<label>/<data type>) is not supported"
         ),
     ):
-        sub1.add_session("ses-789", None)
+        sub1.add_session("ses-789")
     with pytest.raises(
         AssertionError,
         match="subject only has a single session without ID so populating session information makes no sense",
@@ -415,7 +434,7 @@ def test_implicit_session(fakefs: FakeFilesystem):
     sesA = list(sub2.all_sessions())[0]
     assert list(sub2.all_sessions()) == [sesA]
     assert sesA.parent_subject is sub2
-    sub2.add_session("ses-789", None)
+    sub2.add_session("ses-789")
     sub2.populate_sessions_info_from_df(
         DataFrame(
             {

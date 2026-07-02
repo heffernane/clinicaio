@@ -111,8 +111,8 @@ def test_json_sidecar(fakefs: FakeFilesystem):
     bids_path = Path("/tmp/bids_test")
 
     dataset = BIDSDataset(bids_path, _get_dataset_description())
-    subject = dataset.add_subject("sub-01", None)
-    session = subject.add_session("ses-A", None)
+    subject = dataset.add_subject("sub-01")
+    session = subject.add_session("ses-A")
     image = session.write_image(
         DataType.PET,
         FileExtension.NII_GZ,
