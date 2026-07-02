@@ -264,11 +264,11 @@ def test_query_images(
     assert len(image_paths) == paths_count
 
     queried_paths = [
-        str(image.get_nifti_image_path().relative_to(dataset._bids_path))
+        str(image.get_nifti_image_path().relative_to(dataset.bids_path))
         for image in dataset.query_images(query)
     ]
     assert queried_paths == [
-        str(nifti_path.relative_to(dataset._bids_path))
+        str(nifti_path.relative_to(dataset.bids_path))
         for nifti_path in dataset.query_images_nifti_paths(query)
     ]
     images_count = len(queried_paths)

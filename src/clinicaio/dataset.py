@@ -27,7 +27,7 @@ class BIDSDataset:
     """A BIDS dataset"""
 
     _subjects: dict[SubjectId, Subject]
-    _bids_path: Path
+    bids_path: Path
     description: BIDSDatasetDescription
 
     def __init__(self, bids_path: Path, description: BIDSDatasetDescription):
@@ -38,7 +38,7 @@ class BIDSDataset:
         --------
         * :py:meth:`write_to_folder()`
         """
-        self._bids_path = bids_path
+        self.bids_path = bids_path
         self.description = description
         self._subjects = {}
 
@@ -65,7 +65,7 @@ class BIDSDataset:
             yield from session.all_images()
 
     def _get_full_path(self) -> Path:
-        return self._bids_path
+        return self.bids_path
 
     @cached_property
     def _participants_tsv_file_name(self) -> str:
@@ -247,14 +247,14 @@ class BIDSDataset:
         * :py:meth:`write_root_file`
         * :py:meth:`Session.write_image() <clinicaio.session.Session.write_image>`
         """
-        os.makedirs(self._bids_path, exist_ok=True)
+        os.makedirs(self.bids_path, exist_ok=True)
 
-        self.description._write_to_folder(self._bids_path)
+        self.description._write_to_folder(self.bids_path)
         for subject in self.all_subjects():
             subject._write_to_folder()
 
         _write_rows_to_tsv(
-            tsv_path=self._bids_path / "participants.tsv",
+            tsv_path=self.bids_path / "participants.tsv",
             first_column_name="participant_id",
             rows=(
                 subject.info.all_fields_with_id(subject)
@@ -303,7 +303,7 @@ class BIDSDataset:
 
         mode = "x" + ("b" if write_binary else "")
         try:
-            return open(self._bids_path / file_name, mode)
+            return open(self.bids_path / file_name, mode)
         except FileExistsError:
             raise BIDSException(
                 f"can't write root dataset file {file_name} as it already exists"
