@@ -371,7 +371,7 @@ def test_query_companion_files(fakefs: FakeFilesystem):
         subjects_info=False,
         sessions_info=False,
         image_scans_info=False,
-        _report_unhandled_entries=unhandled_entries,
+        report_unhandled_entries=unhandled_entries,
     )
     assert checked_unhandled_entries
 

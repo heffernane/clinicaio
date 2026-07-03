@@ -132,7 +132,7 @@ class BIDSDataset:
         subjects_info: bool,
         sessions_info: bool,
         image_scans_info: bool,
-        _report_unhandled_entries: Callable[[list[str]], None] = lambda entries: None,
+        report_unhandled_entries: Optional[Callable[[list[str]], None]] = None,
     ) -> BIDSDataset:
         """
         Read a BIDS dataset from the given BIDS directory.
@@ -152,6 +152,10 @@ class BIDSDataset:
                 Whether to fill out :py:class:`session information <clinicaio.session.SessionInfo>` from the ``*_sessions.tsv`` files
         image_scans_info :
                 Whether to fill out :py:class:`image scan information <clinicaio.image.ImageScanInfo>` from the ``*_scans.tsv`` files
+        report_unhandled_entries :
+                A function that will be called with the list of relative paths to files and directories that were
+                ignored/not handled while populating the dataset. This is mostly useful for debugging purpose when
+                your dataset has some unconvential layout or extra BIDS derivatives files/folders.
 
         Raises
         ------
@@ -209,10 +213,12 @@ class BIDSDataset:
         if subjects_info:
             dataset._populate_subjects_info_from_tsv()
 
-        relative_unhandled_entries = [
-            str(Path(entry).relative_to(bids_dir)) for entry in unhandled_entries
-        ]
-        _report_unhandled_entries(relative_unhandled_entries)
+        if report_unhandled_entries is not None:
+            relative_unhandled_entries = [
+                str(Path(entry).relative_to(bids_dir)) for entry in unhandled_entries
+            ]
+            report_unhandled_entries(relative_unhandled_entries)
+        
         return dataset
 
     def add_subject(self, id: SubjectId, info: Optional[SubjectInfo] = None) -> Subject:

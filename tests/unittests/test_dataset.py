@@ -251,7 +251,7 @@ def test_read_dataset_subject_structure(fakefs: FakeFilesystem, bids_path: Path)
         subjects_info=False,
         sessions_info=False,
         image_scans_info=False,
-        _report_unhandled_entries=f,
+        report_unhandled_entries=f,
     )
     assert dataset.description == desc
     assert checked_unhandled_entries
