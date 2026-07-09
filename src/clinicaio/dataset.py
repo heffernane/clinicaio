@@ -81,7 +81,7 @@ class BIDSDataset:
 
         Warnings
         --------
-        You should only ever use this function if it is more convenient enough
+        You should only ever use this function if it is more convenient
         for your use case when you are writing a new BIDS dataset. Filling-in
         the information directly from :py:meth:`add_subject` should be favored.
         """
@@ -401,8 +401,8 @@ class BIDSDataset:
     ) -> Iterable[Path]:
         """
         Convenience function that only returns the companion image paths with the given file extension
-        instead of the images themselves. Note that this returns a path for image matching image regardless
-        of whether such a companion file actually exists at time of querying.
+        instead of the images themselves. Depending on ``skip_missing`` it may or may not skip the files
+        that do not currently exist.
 
         Parameters
         ----------

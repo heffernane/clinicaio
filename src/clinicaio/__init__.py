@@ -11,17 +11,19 @@ Organization
 
 A :py:class:`~clinicaio.dataset.BIDSDataset` is first organized by :py:class:`~clinicaio.subject.Subject`
 (also referred to as participant). Each subject has participated in one or more
-:py:class:`~clinicaio.session.Session` where brain images were made. Each :py:class:`~clinicaio.image.Image`
+:py:class:`~clinicaio.session.Session` where brain images were acquired. Each :py:class:`~clinicaio.image.Image`
 of the session can then be used to access its NIFTI image path (:py:meth:`~clinicaio.image.Image.get_nifti_image_path`)
-or one of its companion files' path (:py:meth:`~clinicaio.image.Image.get_image_companion_file_path`) which are
-files that provide extra information on the image that are not included in the NIFTI image file itself, based
-on their file extension. This is notably the case when converting DICOM to NIFTI, as the former provides a wider set of
-metadata than the later (at the cost of complexity).
+or one of its companion files' path (:py:meth:`~clinicaio.image.Image.get_image_companion_path`) which are
+files that provide extra information on the image that are not included in the NIFTI image file itself.
+These companion files are notably produced when converting DICOM to NIFTI, as the former provides a wider set of
+metadata than the later.
 
 Reading
 -------
 
-Use :py:func:`~clinicaio.dataset.BIDSDataset.populate_from_dir` to read an existing BIDS dataset directory.
+Use :py:func:`~clinicaio.dataset.BIDSDataset.populate_from_dir` to read an existing BIDS dataset directory:
+it will walk the entire BIDS folder hierarchy to build a tree of Python data-structures/classes representing each
+subject/session/image that were found, allowing subsequent queries and generally traversing the dataset.
 
 Querying
 --------
@@ -55,7 +57,7 @@ Re-exports
 ----------
 
 This library re-exports all classes that you would ever have to refer to manually, meaning they are
-accessible as e.g. ``clinicaio.BIDSDataset`` directly.
+accessible as e.g. ``from clinicaio import BIDSDataset, ImageQuery`` directly instead of ``from clinicaio.dataset import BIDSDataset; from clinicaio.image_query import ImageQuery``
 """
 
 from .dataset import BIDSDataset

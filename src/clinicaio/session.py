@@ -177,7 +177,7 @@ class Session:
 
         Warnings
         --------
-        You should only ever use this function if it is more convenient enough
+        You should only ever use this function if it is more convenient
         for your use case when you are writing a new BIDS dataset. Filling-in
         the information directly from :py:meth:`Session.write_image` should be favored.
         """
