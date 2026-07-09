@@ -27,7 +27,7 @@ class BIDSDatasetDescription(BaseModel):
         validate_assignment=True,
         validate_default=True,
         arbitrary_types_allowed=True,
-        extra="allow",
+        extra="ignore",
         strict=True,
     )
 
