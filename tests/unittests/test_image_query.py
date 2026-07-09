@@ -170,11 +170,12 @@ def test_data_type():
     assert ImageQuery(data_type=None).data_type is None
     assert ImageQuery(data_type=DataType.PET).data_type == DataType.PET
     assert ImageQuery(data_type=DataType("pet")).data_type == DataType.PET
+    assert ImageQuery(data_type="pet").data_type == DataType.PET
 
     with pytest.raises(
-        BIDSException, match=escape("invalid type <class 'str'> for data_type argument")
+        BIDSException, match=escape("invalid type <class 'int'> for data_type argument")
     ):
-        ImageQuery(data_type="pet")  # type: ignore
+        ImageQuery(data_type=3)  # type: ignore
 
 
 # Entities query filter

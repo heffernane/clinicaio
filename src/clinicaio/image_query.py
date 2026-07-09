@@ -58,6 +58,7 @@ class ImageQuery:
             ImageQuery(sub_ses={"sub-ADNI027S0074": {"ses-A", "ses-B"}})
             ImageQuery(sub_ses=[("sub-ADNI027S0074", "ses-A"), ("sub-AIBL1234", "ses-B")])
             ImageQuery(data_type=DataType.PET)
+            ImageQuery(data_type="pet")
             ImageQuery(entities={"trc": "11CPIB", "task": "rest"})
             ImageQuery(entities=["trc-11CPIB", "task-rest"])
             ImageQuery(entities="trc-11CPIB_task-rest")
@@ -92,7 +93,7 @@ class ImageQuery:
         sub_ses: Optional[
             list[tuple[SubjectId, SessionId]] | dict[SubjectId, set[SessionId]]
         ] = None,
-        data_type: Optional[DataType] = None,
+        data_type: Optional[DataType | str] = None,
         # { "trc": "11CPIB", "run": "1"}
         # or "trc-11CPIB_run-1"
         # or ["trc-11CPIB", "run-1"]
@@ -142,10 +143,12 @@ class ImageQuery:
                 f"Found a subject without an associated session in its pair, in {orig_sub_ses}"
             )
 
-        if not ((data_type is None) or (type(data_type) == DataType)):
+        if not ((data_type is None) or (isinstance(data_type, (DataType, str)))):
             raise BIDSException(
                 f"invalid type {type(data_type)} for data_type argument"
             )
+        if isinstance(data_type, str):
+            data_type = DataType(data_type)
         self.data_type = data_type
 
         self.entities = Entities.from_any(entities)

@@ -560,6 +560,7 @@ def test_all_sessions_and_images(fakefs: FakeFilesystem, bids_path: Path):
         == image_paths
     )
 
+
 def test_read_dataset_str_path(fakefs: FakeFilesystem):
     bids_path = Path("/tmp/bids_test")
 

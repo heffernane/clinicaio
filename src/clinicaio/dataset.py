@@ -218,7 +218,7 @@ class BIDSDataset:
                 str(Path(entry).relative_to(bids_dir)) for entry in unhandled_entries
             ]
             report_unhandled_entries(relative_unhandled_entries)
-        
+
         return dataset
 
     def add_subject(self, id: SubjectId, info: Optional[SubjectInfo] = None) -> Subject:

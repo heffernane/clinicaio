@@ -107,12 +107,12 @@ class Session:
 
     def write_image(
         self,
-        data_type: DataType,
-        nifti_extension: FileExtension,
+        data_type: DataType | str,
+        nifti_extension: FileExtension | str,
         *,
         entities: EntitiesLike,
-        suffix: Optional[Suffix],
-        scan_info: Optional[ImageScanInfo],
+        suffix: Optional[Suffix] = None,
+        scan_info: Optional[ImageScanInfo] = None,
     ) -> Image:
         """
         Adds to the session the image created with the given properties, and creates
@@ -136,6 +136,11 @@ class Session:
                 TypeAdapter(Suffix).validate_python(suffix)
             except PydanticError as e:
                 raise BIDSException._from_pydantic("invalid suffix", e)
+
+        if isinstance(data_type, str):
+            data_type = DataType(data_type)
+        if isinstance(nifti_extension, str):
+            nifti_extension = FileExtension(nifti_extension)
 
         image = self._add_image(
             data_type,
