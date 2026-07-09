@@ -34,6 +34,10 @@ class Session:
             return self.parent_subject._get_full_path() / f"{self.id}"
 
     def images_by_data_type(self, data_type: str | DataType) -> Iterable[Image]:
+        """
+        Retrieves all this session's images that match the given data type.
+        """
+
         return self._images.get(DataType(data_type)) or []
 
     def all_images(self) -> Iterable[Image]:

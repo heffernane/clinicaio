@@ -443,7 +443,7 @@ def test_write_root_file_non_root_file_name(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
             "BIDSDataset.write_root_file() is not meant to write in sub-folders (foo/README)"
         ),

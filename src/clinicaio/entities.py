@@ -8,7 +8,6 @@ from .types import Label
 
 
 # not for sub- and ses- entities
-# TODO: enum?
 class EntityKey(Label):
     def __hash__(self) -> int:
         return self.value.__hash__()
@@ -16,7 +15,6 @@ class EntityKey(Label):
 
 @dataclass
 class EntityValue:
-    # value: Index | Label
     _value: Label
 
     def __init__(self, value: str) -> None:
@@ -132,7 +130,7 @@ class Entities:
         ValueError
                 if the entities were invalid.
         TypeError
-                if the passed entities argument is not of any allowed type, or 
+                if the passed entities argument is not of any allowed type
 
         See also
         --------
@@ -177,12 +175,24 @@ class Entities:
         return True
 
     def get_value(self, key: EntityKey) -> Optional[EntityValue]:
+        """
+        Retrieves the value corresponding to the given key for the given entities, if present.
+        """
+
         return self._entities.get(key)
 
     def __iter__(self) -> Iterator[tuple[EntityKey, EntityValue]]:
+        """
+        Retrieves all the entities as key/value pairs.
+        """
+
         return iter(self._entities.items())
 
     def __len__(self) -> int:
+        """
+        Retrieves the number of key/value entity pairs.        
+        """
+
         return len(self._entities)
 
     def __repr__(self) -> str:

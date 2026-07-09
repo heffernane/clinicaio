@@ -23,6 +23,12 @@ _JSON_FILENAME = "dataset_description.json"
 
 # dataset_description.json at the root of the BIDS dataset
 class BIDSDatasetDescription(BaseModel):
+    """
+    The information that describes a given BIDS dataset.
+    
+    `BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/dataset-description.html>`__
+    """
+
     model_config = ConfigDict(
         validate_assignment=True,
         validate_default=True,
@@ -50,6 +56,10 @@ class BIDSDatasetDescription(BaseModel):
     def new(
         cls, dataset_type: BIDSDatasetType, *, name: str, bids_version: str
     ) -> BIDSDatasetDescription:
+        """
+        Creates a new dataset description object, to describe a BIDS dataset.
+        """
+
         try:
             return BIDSDatasetDescription.model_validate(
                 {

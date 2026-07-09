@@ -34,6 +34,17 @@ class Subject:
         return self.parent_dataset._get_full_path() / f"{self.id}"
 
     def add_session(self, id: SessionId, info: Optional[SessionInfo] = None) -> Session:
+        """
+        Adds a new session to this subject.
+
+        Raises
+        ------
+        AssertionError
+            if this subject only has an implicit session. This may only happens if the dataset was populated from the filesystem.
+        BIDSException
+            if the session ID is invalid or this ID is already used by another session for this particular subject.
+        """
+
         assert not isinstance(self._sessions, Session), (
             "Adding a named/ID-ed session to a subject that only has an implicit one (sub-<label>/<data_type>/... instead of sub-<label>/ses-<label>/<data type>) is not supported"
         )
@@ -58,12 +69,20 @@ class Subject:
         return session
 
     def all_sessions(self) -> Iterable[Session]:
+        """
+        Retrieves all the sessions that this subject is part of.
+        """
+
         if isinstance(self._sessions, Session):
             return [self._sessions]
         else:
             return self._sessions.values()
 
     def sessions_count(self) -> int:
+        """
+        Retrieves the number of sessions that this subject is part of.
+        """
+
         if isinstance(self._sessions, Session):
             return 1
         else:
@@ -87,6 +106,9 @@ class Subject:
         return self._sessions.get(id)
 
     def all_images(self) -> Iterable[Image]:
+        """
+        Retrieves all the images that are part of this subject's sessions.
+        """
         for session in self.all_sessions():
             yield from session.all_images()
 

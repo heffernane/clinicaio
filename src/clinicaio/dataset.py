@@ -43,6 +43,10 @@ class BIDSDataset:
         self._subjects = {}
 
     def subject_by_id(self, id: SubjectId) -> Optional[Subject]:
+        """
+        Retrieves from this dataset the given subject by its ID.
+        """
+
         try:
             TypeAdapter(SubjectId).validate_python(id)
         except PydanticError as e:
@@ -51,16 +55,32 @@ class BIDSDataset:
         return self._subjects.get(id)
 
     def all_subjects(self) -> Iterable[Subject]:
+        """
+        Retrieves all the subjects that are part of this dataset.
+        """
+
         return self._subjects.values()
 
     def subjects_count(self) -> int:
+        """
+        Retrieves the number of subjects that are part of this dataset.
+        """
+
         return len(self._subjects)
 
     def all_sessions(self) -> Iterable[Session]:
+        """
+        Retrieves all the sessions that this dataset's subjects are part of.
+        """
+
         for subject in self.all_subjects():
             yield from subject.all_sessions()
 
     def all_images(self) -> Iterable[Image]:
+        """
+        Retrieves all the images present in this dataset.
+        """
+
         for session in self.all_sessions():
             yield from session.all_images()
 
@@ -224,6 +244,15 @@ class BIDSDataset:
         return dataset
 
     def add_subject(self, id: SubjectId, info: Optional[SubjectInfo] = None) -> Subject:
+        """
+        Adds a new subject to this dataset.
+
+        Raises
+        ------
+        BIDSException
+            if the subject ID is invalid or this ID is already used by another subject in this dataset
+        """
+
         try:
             TypeAdapter(SubjectId).validate_python(id)
         except PydanticError as e:
@@ -249,6 +278,11 @@ class BIDSDataset:
         folders with their TSV files. Images must have already been added to the sessions with
         :py:meth:`Session.write_image() <clinicaio.session.Session.write_image>` before using this method,
         otherwise the image scans info will be missing.
+
+        Parameters
+        ----------
+        readme
+            The content of the README file that will be placed at the root of the dataset. See the `BIDS Specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/dataset-description.html#readme>`__
 
         See also
         --------
@@ -294,7 +328,7 @@ class BIDSDataset:
 
         Raises
         ------
-        BIDSException
+        ValueError
                 if the file name contains ``/``, or if the file already exists.
 
         Returns
@@ -311,7 +345,7 @@ class BIDSDataset:
         """
 
         if "/" in file_name:
-            raise BIDSException(
+            raise ValueError(
                 f"BIDSDataset.write_root_file() is not meant to write in sub-folders ({file_name})"
             )
 
@@ -416,7 +450,7 @@ class BIDSDataset:
         Note
         ----
         This method does not guarantee whether a given path is skipped when the iteration reaches it,
-        or when this method returns.
+        or when this method returns. This is due to the lazy nature of generators in Python.
 
         See also
         --------

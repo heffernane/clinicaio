@@ -144,9 +144,7 @@ class ImageQuery:
             )
 
         if not ((data_type is None) or (isinstance(data_type, (DataType, str)))):
-            raise TypeError(
-                f"invalid type {type(data_type)} for data_type argument"
-            )
+            raise TypeError(f"invalid type {type(data_type)} for data_type argument")
         if isinstance(data_type, str):
             data_type = DataType(data_type)
         self.data_type = data_type
