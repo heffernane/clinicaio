@@ -1,3 +1,5 @@
+"""The entities key/value pairs that describe a given image in a dataset."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator

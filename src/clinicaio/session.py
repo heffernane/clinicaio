@@ -1,3 +1,5 @@
+"""A session that a given subject has participated in."""
+
 from __future__ import annotations
 
 import os

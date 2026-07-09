@@ -1,3 +1,5 @@
+"""A subject that is part of a BIDS dataset."""
+
 from __future__ import annotations
 
 import os

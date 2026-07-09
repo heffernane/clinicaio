@@ -1,3 +1,5 @@
+"""The images that are part of a dataset subject's session."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
