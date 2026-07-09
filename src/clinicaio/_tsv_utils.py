@@ -6,11 +6,6 @@ import pandas as pd
 
 from .types import BIDSException
 
-__all__ = [
-    "_read_tsv_as_df",
-    "_write_rows_to_tsv",
-]
-
 
 def _read_tsv_as_df(tsv_path: Path) -> pd.DataFrame:
     """
