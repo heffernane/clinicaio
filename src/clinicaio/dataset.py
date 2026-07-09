@@ -280,7 +280,7 @@ class BIDSDataset:
         with self.write_root_file("README", write_binary=False) as f:
             print(readme, file=f)
 
-    def write_root_file(self, file_name: str, *, write_binary: bool) -> IO[Any]:
+    def write_root_file(self, file_name: str, *, write_binary: bool = False) -> IO[Any]:
         """
         Creates and opens for writing the given file at the root of the dataset, eventually in "binary" mode
         (per Python's :py:func:`open`).
