@@ -139,7 +139,7 @@ def test_write_image_invalid_file_extension(fakefs: FakeFilesystem):
     session = subject.add_session("ses-A")
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match="provided non-NIFTI file extension json when adding image to session",
     ):
         session.write_image(

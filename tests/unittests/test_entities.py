@@ -35,7 +35,7 @@ def test_from_str_list():
 
 def test_from_invalid_str_list():
     with pytest.raises(
-        BIDSException,
+        TypeError,
         match=escape("found non str entity in list[str] entities parameter"),
     ):
         Entities.from_str_list(["task-rest", 3])  # type: ignore
@@ -45,7 +45,7 @@ def test_from_str_list_no_separator():
     str_list = ["task", "rest"]
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
             f"found entities list {str_list} that had an element without a - separator"
         ),
@@ -138,6 +138,6 @@ def test_from_any():
 
 def test_from_any_invalid_type():
     with pytest.raises(
-        BIDSException, match=escape(f"invalid input type <class 'int'> for entities 3")
+        TypeError, match=escape(f"invalid input type <class 'int'> for entities 3")
     ):
         Entities.from_any(3)  # type: ignore

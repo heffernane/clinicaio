@@ -122,7 +122,7 @@ class BIDSDataset:
         except BIDSException as e:
             raise BIDSException(
                 f"could not populate subjects info from TSV file {participants_tsv_path}: {e}"
-            )
+            ) from e
 
     @classmethod
     def populate_from_dir(
@@ -169,7 +169,9 @@ class BIDSDataset:
         try:
             description = BIDSDatasetDescription._load_from_folder(bids_dir)
         except BIDSException as e:
-            raise BIDSException(f"could not read BIDS description from JSON file: {e}")
+            raise BIDSException(
+                f"could not read BIDS description from JSON file: {e}"
+            ) from e
 
         dataset = BIDSDataset(bids_path=bids_dir, description=description)
 
@@ -208,7 +210,7 @@ class BIDSDataset:
             except Exception as e:
                 raise BIDSException(
                     f"got exception while adding subject {subject_id} and populating its sessions: {e}"
-                )
+                ) from e
 
         if subjects_info:
             dataset._populate_subjects_info_from_tsv()
@@ -255,7 +257,13 @@ class BIDSDataset:
         """
         os.makedirs(self.bids_path, exist_ok=True)
 
-        self.description._write_to_folder(self.bids_path)
+        try:
+            self.description._write_to_folder(self.bids_path)
+        except Exception as e:
+            raise BIDSException(
+                f"can't write dataset description JSON to folder {self.bids_path}: {e}"
+            ) from e
+
         for subject in self.all_subjects():
             subject._write_to_folder()
 
@@ -311,9 +319,7 @@ class BIDSDataset:
         try:
             return open(self.bids_path / file_name, mode)
         except FileExistsError:
-            raise BIDSException(
-                f"can't write root dataset file {file_name} as it already exists"
-            )
+            raise
 
     def query_images(self, query: ImageQuery) -> Iterable[Image]:
         """
@@ -323,7 +329,7 @@ class BIDSDataset:
         Raises
         ------
         BIDSException
-            if both ``query.sub_ses`` and either ``query.subjects``or ``query.sessions`` are specified
+            if both ``query.sub_ses`` and either ``query.subjects`` or ``query.sessions`` are specified
             at the same time: the former operates on a cross-product basis, while the later two operate
             on a cartesian-product when combined, so it does not make much sense to have both at the same time
 
@@ -332,13 +338,6 @@ class BIDSDataset:
         * :py:meth:`query_images_nifti_paths`
         * :py:meth:`query_images_companions_paths`
         """
-        if len(query.sub_ses) > 0 and (
-            (len(query.subjects) > 0) or (len(query.sessions) > 0)
-        ):
-            raise BIDSException(
-                "querying for both cross-product subjects-sessions pairs and cartesian-product of subjects and sessions does not make sense"
-            )
-
         filtered_subjects = (
             self.all_subjects()
             if len(query.subjects) == 0 and len(query.sub_ses) == 0

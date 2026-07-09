@@ -161,9 +161,9 @@ def test_write_to_folder_already_exists(fakefs: FakeFilesystem):
         BIDSDatasetType.DERIVATIVE, name="TEST DT NAME", bids_version="1.10.7"
     )
     with pytest.raises(
-        BIDSException,
+        FileExistsError,
         match=escape(
-            f"can't write dataset description JSON to folder {bids_dir} as it already exists there"
+            f"File exists: PosixPath('/tmp/BIDS_test/dataset_description.json')"
         ),
     ):
         desc._write_to_folder(bids_dir)
@@ -176,10 +176,8 @@ def test_write_to_folder_non_existing_parent(fakefs: FakeFilesystem):
         BIDSDatasetType.DERIVATIVE, name="TEST DT NAME", bids_version="1.10.7"
     )
     with pytest.raises(
-        BIDSException,
-        match=escape(
-            f"can't read dataset description JSON from non-existing folder {bids_dir}"
-        ),
+        FileNotFoundError,
+        match=escape("No such file or directory"),
     ):
         desc._write_to_folder(bids_dir)
 

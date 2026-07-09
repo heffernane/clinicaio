@@ -85,7 +85,7 @@ class Session:
         scan_info: Optional[ImageScanInfo],
     ) -> Image:
         if not nifti_extension.is_nifti():
-            raise BIDSException(
+            raise ValueError(
                 f"provided non-NIFTI file extension {nifti_extension} when adding image to session"
             )
 
@@ -182,7 +182,9 @@ class Session:
         the information directly from :py:meth:`Session.write_image` should be favored.
         """
         if "filename" not in scans_tsv_df.columns:
-            raise BIDSException("the dataframe did not have the required 'filename' column")
+            raise BIDSException(
+                "the dataframe did not have the required 'filename' column"
+            )
 
         infos: list[dict[str, Any]] = scans_tsv_df.to_dict(orient="records")  # type: ignore
         for info in infos:
@@ -194,17 +196,17 @@ class Session:
                 data_type, image_basename = str(image_filename).rsplit(
                     sep="/", maxsplit=1
                 )
-            except ValueError:
+            except ValueError as e:
                 raise BIDSException(
                     f"expected image/scan filename of format <data_type>/<...> for {image_filename} in dataframe"
-                )
+                ) from e
 
             try:
                 data_type = DataType(data_type)
-            except ValueError:
+            except ValueError as e:
                 raise BIDSException(
                     f"expected valid data type as first folder of filename {image_filename} in dataframe"
-                )
+                ) from e
 
             if not image_basename.startswith(self._sub_ses_prefix):
                 raise BIDSException(
@@ -217,7 +219,7 @@ class Session:
             except BIDSException as e:
                 raise BIDSException(
                     f"found invalid image filename {image_filename} in dataframe: {e}"
-                )
+                ) from e
 
             if filename_components is None:
                 raise BIDSException(
@@ -259,7 +261,7 @@ class Session:
         except BIDSException as e:
             raise BIDSException(
                 f"could not populate images scans info from TSV file {scans_tsv_path}: {e}"
-            )
+            ) from e
 
     def _populate_images_from_folder(self, *, image_scans_info: bool) -> set[str]:
         unhandled_entries: set[str] = set()
@@ -298,7 +300,7 @@ class Session:
                 except BIDSException as e:
                     raise BIDSException(
                         f"Found invalid image filename {child_image.name} in folder {data_type}: {e}"
-                    )
+                    ) from e
 
                 # For now we just exclude any file without a file extension, without raising
                 # an error.

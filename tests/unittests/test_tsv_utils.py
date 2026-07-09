@@ -105,8 +105,8 @@ def test_write_tsv_file_already_exists(fakefs: FakeFilesystem):
     fakefs.create_file(file_path=tsv_path)
 
     with pytest.raises(
-        BIDSException,
-        match=escape(f"BIDS TSV file {tsv_path} can't be written as it already exists"),
+        FileExistsError,
+        match=escape("File exists: '/tmp/foobar.tsv'"),
     ):
         _write_rows_to_tsv(
             tsv_path=tsv_path, first_column_name="aaa", rows=[{"aaa": "bbb"}]

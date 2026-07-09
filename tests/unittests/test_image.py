@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from re import escape
@@ -88,9 +89,9 @@ def test_parse_entities_suffix():
 )
 def test_parse_missing_key_value_separator(filename: str):
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
-            f"found invalid entities for image filename {filename}: found entities list "
+            "found entities list "
         )
         + ".+"
         + escape(" that had an element without a - separator"),
@@ -128,16 +129,16 @@ def test_json_sidecar(fakefs: FakeFilesystem):
     sidecar_path = bids_path / "sub-01/ses-A/pet/sub-01_ses-A_task-rest_sfx.json"
     sidecar_file = fakefs.create_file(sidecar_path, contents='{3: "3"}')
     with pytest.raises(
-        BIDSException,
+        json.decoder.JSONDecodeError,
         match=escape(
-            "could not parse JSON sidecar file: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+            "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
         ),
     ):
         image.json_sidecar
 
     sidecar_file.set_contents('["foo", "bar", 3]')
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
             f"expected JSON sidecar {sidecar_path} to contain an object as root node"
         ),

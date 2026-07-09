@@ -34,7 +34,7 @@ class Image:
         ------
         OSError
             if the JSON sidecar does not exist
-        BIDSException
+        ValueError
             if the JSON sidecar's content is invalid
         """
 
@@ -44,11 +44,11 @@ class Image:
         with open(sidecar_path, mode="r") as f:
             try:
                 json_dict = json.load(f)
-            except json.JSONDecodeError as e:
-                raise BIDSException(f"could not parse JSON sidecar file: {e}")
+            except json.JSONDecodeError:
+                raise
 
             if not isinstance(json_dict, dict):
-                raise BIDSException(
+                raise ValueError(
                     f"expected JSON sidecar {sidecar_path} to contain an object as root node"
                 )
 
@@ -79,11 +79,11 @@ class Image:
 
         try:
             extension = FileExtension(file_ext)
-        except ValueError:
+        except ValueError as e:
             # If this happens for legitimate files, you may need to add the file extension to the enumeration
             raise BIDSException(
                 f"Found unknown file extension {file_ext} for filename {filename_after_sub_ses}"
-            )
+            ) from e
 
         entities_list = entities_and_suffix.split("_")
         suffix = None
@@ -103,7 +103,7 @@ class Image:
         except BIDSException as e:
             raise BIDSException(
                 f"found invalid entities for image filename {filename_after_sub_ses}: {e}"
-            )
+            ) from e
 
         return (entities, suffix, extension)
 
@@ -148,13 +148,6 @@ class Image:
 
         """
         return self._get_image_base_full_path().with_suffix(f".{extension}")
-
-
-# sidecar file .json
-# class ImageInfo:
-# ...
-# sidecar_dict: dict[str, Any]
-# pass
 
 
 @dataclass

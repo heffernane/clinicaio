@@ -132,7 +132,9 @@ class Subject:
         )
 
         if "session_id" not in sessions_tsv_df.columns:
-            raise BIDSException("the dataframe did not have the required 'session_id' column")
+            raise BIDSException(
+                "the dataframe did not have the required 'session_id' column"
+            )
 
         infos: list[dict[str, Any]] = sessions_tsv_df.to_dict(orient="records")  # type: ignore
         for info in infos:
@@ -165,7 +167,7 @@ class Subject:
         except BIDSException as e:
             raise BIDSException(
                 f"could not populate sessions info from TSV file {sessions_tsv_path}: {e}"
-            )
+            ) from e
 
     def _populate_sessions_from_folder(
         self, *, sessions_info: bool, image_scans_info: bool
@@ -203,7 +205,7 @@ class Subject:
             except Exception as e:
                 raise BIDSException(
                     f"got exception while adding session {session_id} and populating its images: {e}"
-                )
+                ) from e
 
         # Handling of implicit sessions, e.g. sub-1/anat/... instead of sub-1/ses-A/anat/...
         assert isinstance(self._sessions, dict)
@@ -228,7 +230,7 @@ class Subject:
             except Exception as e:
                 raise BIDSException(
                     f"got exception while adding session without ID/dedicated folder and populating its images: {e}"
-                )
+                ) from e
 
             if session.images_count() > 0:
                 self._sessions = session

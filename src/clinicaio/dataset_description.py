@@ -61,20 +61,16 @@ class BIDSDatasetDescription(BaseModel):
             )
         except PydanticError as e:
             raise BIDSException._from_pydantic(
-                f"could not create new dataset description", e
+                "could not create new dataset description", e
             )
 
     def _write_to_folder(self, folder: Path) -> None:
         try:
             json_file = open(folder / _JSON_FILENAME, mode="x")
         except FileExistsError:
-            raise BIDSException(
-                f"can't write dataset description JSON to folder {folder} as it already exists there"
-            )
+            raise
         except FileNotFoundError:
-            raise BIDSException(
-                f"can't read dataset description JSON from non-existing folder {folder}"
-            )
+            raise
 
         # NOTE: the error handling needs to happen above, but make sure to use a with ...: construct
         # as otherwise the file will not be flushed or closed
@@ -86,7 +82,7 @@ class BIDSDatasetDescription(BaseModel):
         try:
             desc_file = open(desc_json_folder / _JSON_FILENAME, mode="r")
         except OSError as e:
-            raise BIDSException(f"could not open BIDS description JSON file: {e}")
+            raise BIDSException("could not open BIDS description JSON file") from e
 
         with desc_file:
             return BIDSDatasetDescription._load_from_data(desc_file.read())
@@ -102,7 +98,7 @@ class BIDSDatasetDescription(BaseModel):
         except TypeError as e:
             raise BIDSException(
                 f"could not validate BIDS dataset description from JSON {desc_json} as one of the keys had the wrong type: {e}"
-            )
+            ) from e
 
 
 class BIDSDatasetType(str, Enum):

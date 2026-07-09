@@ -173,7 +173,7 @@ def test_data_type():
     assert ImageQuery(data_type="pet").data_type == DataType.PET
 
     with pytest.raises(
-        BIDSException, match=escape("invalid type <class 'int'> for data_type argument")
+        TypeError, match=escape("invalid type <class 'int'> for data_type argument")
     ):
         ImageQuery(data_type=3)  # type: ignore
 
@@ -210,7 +210,7 @@ def test_entities_str_list():
 
 def test_entities_invalid_str_list():
     with pytest.raises(
-        BIDSException,
+        TypeError,
         match=escape("found non str entity in list[str] entities parameter"),
     ):
         ImageQuery(entities=["task-rest", 3])  # type: ignore
@@ -261,7 +261,7 @@ def test_entities_mixed_dict():
 
 def test_entities_invalid_type():
     with pytest.raises(
-        BIDSException, match=escape("invalid input type <class 'int'> for entities 3")
+        TypeError, match=escape("invalid input type <class 'int'> for entities 3")
     ):
         ImageQuery(entities=3)  # type: ignore
 

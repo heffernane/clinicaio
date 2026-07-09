@@ -19,7 +19,7 @@ def _read_tsv_as_df(tsv_path: Path) -> pd.DataFrame:
 
         return df
     except Exception as e:
-        raise BIDSException(f"Could not read TSV file {tsv_path}: {e}")
+        raise BIDSException(f"Could not read TSV file {tsv_path}: {e}") from e
 
 
 def _write_rows_to_tsv(
@@ -78,6 +78,4 @@ def _write_rows_to_tsv(
     try:
         df.to_csv(tsv_path, mode="x", sep="\t", na_rep="n/a", index=False)
     except FileExistsError:
-        raise BIDSException(
-            f"BIDS TSV file {tsv_path} can't be written as it already exists"
-        )
+        raise

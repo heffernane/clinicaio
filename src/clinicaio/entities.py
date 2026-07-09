@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Optional, TypeAlias
 
-from .types import BIDSException, Label
+from .types import Label
 
 
 # not for sub- and ses- entities
@@ -46,7 +46,7 @@ class Entities:
 
         Raises
         ------
-        BIDSException
+        ValueError
                 if a key or value was invalid.
 
         Returns
@@ -74,8 +74,10 @@ class Entities:
 
         Raises
         ------
-        BIDSException
+        ValueError
                 if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
+        TypeError
+                if one of the list elements wasn't a str
 
         Returns
         -------
@@ -83,7 +85,7 @@ class Entities:
         """
 
         if not all(isinstance(entity, str) for entity in entities):
-            raise BIDSException("found non str entity in list[str] entities parameter")
+            raise TypeError("found non str entity in list[str] entities parameter")
 
         try:
             values: dict[EntityKey, EntityValue] = {
@@ -92,10 +94,10 @@ class Entities:
                     entity.split("-", maxsplit=1) for entity in entities
                 )
             }
-        except ValueError:
-            raise BIDSException(
+        except ValueError as e:
+            raise ValueError(
                 f"found entities list {entities} that had an element without a - separator"
-            )
+            ) from e
 
         return Entities(values)
 
@@ -111,7 +113,7 @@ class Entities:
 
         Raises
         ------
-        BIDSException
+        ValueError
                 if one of the list elements did not have a ``-`` separator, or a key or value was invalid.
 
         Returns
@@ -127,8 +129,10 @@ class Entities:
 
         Raises
         ------
-        BIDSException
-                if the passed entities argument is not of any allowed type, or if the entities were invalid.
+        ValueError
+                if the entities were invalid.
+        TypeError
+                if the passed entities argument is not of any allowed type, or 
 
         See also
         --------
@@ -148,7 +152,7 @@ class Entities:
         elif isinstance(entities, dict):
             return Entities.from_dict(entities)
         else:
-            raise BIDSException(
+            raise TypeError(
                 f"invalid input type {type(entities)} for entities {entities}"
             )
 

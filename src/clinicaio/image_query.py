@@ -42,7 +42,7 @@ class ImageQuery:
 
     Raises
     ------
-    BIDSException
+    ValueError
         if both ``query.sub_ses`` and either ``query.subjects``or ``query.sessions`` are specified
         at the same time: the former operates on a cross-product basis, while the later two operate
         on a cartesian-product when combined, so it does not make much sense to have both at the same time
@@ -139,12 +139,12 @@ class ImageQuery:
             dict[SubjectId, set[SessionId]], sub_ses, "invalid subject/session pair(s)"
         )
         if any(len(sessions) == 0 for sessions in self.sub_ses.values()):
-            raise BIDSException(
+            raise ValueError(
                 f"Found a subject without an associated session in its pair, in {orig_sub_ses}"
             )
 
         if not ((data_type is None) or (isinstance(data_type, (DataType, str)))):
-            raise BIDSException(
+            raise TypeError(
                 f"invalid type {type(data_type)} for data_type argument"
             )
         if isinstance(data_type, str):
@@ -158,6 +158,6 @@ class ImageQuery:
         if len(self.sub_ses) > 0 and (
             (len(self.subjects) > 0) or (len(self.sessions) > 0)
         ):
-            raise BIDSException(
+            raise ValueError(
                 "querying for both cross-product subjects-sessions pairs and cartesian-product of subjects and sessions does not make sense"
             )

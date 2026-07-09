@@ -491,7 +491,7 @@ def test_query_cross_xor_cartesian_product(
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match="querying for both cross-product subjects-sessions pairs and cartesian-product of subjects and sessions does not make sense",
     ):
         # https://docs.python.org/3/reference/expressions.html#yield-expressions
@@ -510,7 +510,7 @@ def test_query_sub_ses_pair_no_sessions():
     dataset.add_subject("sub-1")
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
             "Found a subject without an associated session in its pair, in {'sub-1': set()}"
         ),

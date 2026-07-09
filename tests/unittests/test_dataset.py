@@ -90,7 +90,7 @@ def test_read_dataset_description(fakefs: FakeFilesystem, bids_path: Path):
 def test_missing_dataset_description(fakefs: FakeFilesystem, bids_path: Path):
     with pytest.raises(
         BIDSException,
-        match=f"^could not read BIDS description from JSON file: could not open BIDS description JSON file: ",
+        match=f"^could not read BIDS description from JSON file: could not open BIDS description JSON file",
     ):
         BIDSDataset.populate_from_dir(
             bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
@@ -457,8 +457,8 @@ def test_write_root_file_already_existing(fakefs: FakeFilesystem, bids_path: Pat
     dataset = BIDSDataset(bids_path, _get_dataset_description())
 
     with pytest.raises(
-        BIDSException,
-        match=escape("can't write root dataset file README as it already exists"),
+        FileExistsError,
+        match=escape("File exists: PosixPath('/tmp/bids_test/README')"),
     ):
         with dataset.write_root_file("README", write_binary=False) as f:
             pass
@@ -472,8 +472,8 @@ def test_write_root_file_already_existing_directory(
     dataset = BIDSDataset(bids_path, _get_dataset_description())
 
     with pytest.raises(
-        BIDSException,
-        match=escape("can't write root dataset file README as it already exists"),
+        FileExistsError,
+        match=escape("File exists: PosixPath('/tmp/bids_test/README')"),
     ):
         with dataset.write_root_file("README", write_binary=False) as f:
             pass
