@@ -368,7 +368,8 @@ class Session:
 
 
 # Populated from sub-<label>/sub-<label>_sessions.tsv
-class SessionInfo(TypedDict, extra_items=Any):
+# FIXME: https://github.com/python/mypy/issues/18176
+class SessionInfo(TypedDict, extra_items=Any): # type: ignore
     """
     `BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#sessions-file>`__
     """
