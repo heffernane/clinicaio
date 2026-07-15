@@ -147,20 +147,20 @@ def test_enum_repr(enum_type: Any):
 
 
 def test_empty_label():
-    with pytest.raises(BIDSException, match=escape("BIDS label can't be empty")):
+    with pytest.raises(ValueError, match=escape("BIDS label can't be empty")):
         Label("")
 
 
 def test_label_alpha_non_ascii():
     with pytest.raises(
-        BIDSException, match=escape("BIDS label aéa must be all [a-zA-Z0-9] characters")
+        ValueError, match=escape("BIDS label aéa must be all [a-zA-Z0-9] characters")
     ):
         Label("aéa")
 
 
 def test_label_non_alnum():
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape("BIDS label bbb33^-aa must be all [a-zA-Z0-9] characters"),
     ):
         Label("bbb33^-aa")

@@ -168,7 +168,7 @@ def test_write_tsv_missing_first_column_for_row(fakefs: FakeFilesystem):
     tsv_path = Path("/tmp/foobar.tsv")
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match="one of the provided rows did not have the required column aaa",
     ):
         _write_rows_to_tsv(
@@ -189,7 +189,7 @@ def test_write_tsv_missing_first_column_for_all_rows(fakefs: FakeFilesystem):
     tsv_path = Path("/tmp/foobar.tsv")
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match="one of the provided rows did not have the required column aaa",
     ):
         _write_rows_to_tsv(

@@ -58,7 +58,7 @@ class Subject:
             raise BIDSException._from_pydantic("invalid session ID", e)
 
         if id in self._sessions:
-            raise BIDSException(
+            raise ValueError(
                 f"tried to add session of ID {id} but it already exists within this subject"
             )
 
@@ -162,7 +162,7 @@ class Subject:
         )
 
         if "session_id" not in sessions_tsv_df.columns:
-            raise BIDSException(
+            raise ValueError(
                 "the dataframe did not have the required 'session_id' column"
             )
 
@@ -199,7 +199,7 @@ class Subject:
         sessions_tsv_df = _read_tsv_as_df(sessions_tsv_path)
         try:
             self.populate_sessions_info_from_df(sessions_tsv_df)
-        except BIDSException as e:
+        except Exception as e:
             raise BIDSException(
                 f"could not populate sessions info from TSV file {sessions_tsv_path}: {e}"
             ) from e
@@ -220,7 +220,7 @@ class Subject:
                 continue
 
             if not child.is_dir():
-                raise BIDSException(
+                raise ValueError(
                     f"found ses- entry {child.name} that was not a directory"
                 )
 
@@ -238,7 +238,7 @@ class Subject:
                     image_scans_info=image_scans_info
                 )
             except Exception as e:
-                raise BIDSException(
+                raise ValueError(
                     f"got exception while adding session {session_id} and populating its images: {e}"
                 ) from e
 
@@ -263,7 +263,7 @@ class Subject:
                     image_scans_info=image_scans_info
                 )
             except Exception as e:
-                raise BIDSException(
+                raise ValueError(
                     f"got exception while adding session without ID/dedicated folder and populating its images: {e}"
                 ) from e
 

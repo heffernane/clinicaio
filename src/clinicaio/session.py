@@ -189,7 +189,7 @@ class Session:
         the information directly from :py:meth:`Session.write_image() <clinicaio.session.Session.write_image>` should be favored.
         """
         if "filename" not in scans_tsv_df.columns:
-            raise BIDSException(
+            raise ValueError(
                 "the dataframe did not have the required 'filename' column"
             )
 
@@ -204,32 +204,32 @@ class Session:
                     sep="/", maxsplit=1
                 )
             except ValueError as e:
-                raise BIDSException(
+                raise ValueError(
                     f"expected image/scan filename of format <data_type>/<...> for {image_filename} in dataframe"
                 ) from e
 
             try:
                 data_type = DataType(data_type)
             except ValueError as e:
-                raise BIDSException(
+                raise ValueError(
                     f"expected valid data type as first folder of filename {image_filename} in dataframe"
                 ) from e
 
             if not image_basename.startswith(self._sub_ses_prefix):
-                raise BIDSException(
+                raise ValueError(
                     f"expected image basename {image_basename} of filename {image_filename} in dataframe to have prefix {self._sub_ses_prefix}"
                 )
 
             after_sub_ses = image_basename.removeprefix(self._sub_ses_prefix)
             try:
                 filename_components = Image._parse_filename_components(after_sub_ses)
-            except BIDSException as e:
-                raise BIDSException(
+            except Exception as e:
+                raise ValueError(
                     f"found invalid image filename {image_filename} in dataframe: {e}"
                 ) from e
 
             if filename_components is None:
-                raise BIDSException(
+                raise ValueError(
                     f"found image filename {image_filename} in dataframe without any file extension"
                 )
             entities, suffix, extension = filename_components
@@ -248,7 +248,7 @@ class Session:
                     break
 
             if image is None:
-                raise BIDSException(
+                raise ValueError(
                     f"could not find image for filename {image_filename} in dataframe"
                 )
 
@@ -263,7 +263,7 @@ class Session:
         scans_tsv_df = _read_tsv_as_df(scans_tsv_path)
         try:
             self.populate_image_scans_info_from_df(scans_tsv_df)
-        except BIDSException as e:
+        except Exception as e:
             raise BIDSException(
                 f"could not populate images scans info from TSV file {scans_tsv_path}: {e}"
             ) from e
@@ -283,7 +283,7 @@ class Session:
                 continue
 
             if not child.is_dir():
-                raise BIDSException(
+                raise ValueError(
                     f"Found data type entry {data_type} that was not a directory"
                 )
 
@@ -291,7 +291,7 @@ class Session:
 
             for child_image in os.scandir(child.path):
                 if not child_image.name.startswith(self._sub_ses_prefix):
-                    raise BIDSException(
+                    raise ValueError(
                         f"expected {data_type}/{child_image.name} "
                         f"filename to start with {self._sub_ses_prefix} due to its placement in the BIDS directory hierarchy"
                     )
@@ -302,8 +302,8 @@ class Session:
                     filename_components = Image._parse_filename_components(
                         after_sub_ses
                     )
-                except BIDSException as e:
-                    raise BIDSException(
+                except Exception as e:
+                    raise ValueError(
                         f"Found invalid image filename {child_image.name} in folder {data_type}: {e}"
                     ) from e
 
@@ -357,7 +357,7 @@ class Session:
                         str(image.get_nifti_image_path()) for image in other_same_images
                     ]
 
-                    raise BIDSException(
+                    raise ValueError(
                         f"found image {str(dup_image.get_nifti_image_path())} that only had file extension as difference from {paths} (i.e. .nii vs .nii.gz with same subject+session+datatype+entities+suffix)"
                     )
 

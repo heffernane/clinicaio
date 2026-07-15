@@ -93,8 +93,8 @@ class BIDSDatasetDescription(BaseModel):
     def _load_from_folder(cls, desc_json_folder: Path) -> BIDSDatasetDescription:
         try:
             desc_file = open(desc_json_folder / _JSON_FILENAME, mode="r")
-        except OSError as e:
-            raise BIDSException("could not open BIDS description JSON file") from e
+        except OSError:
+            raise
 
         with desc_file:
             return BIDSDatasetDescription._load_from_data(desc_file.read())
@@ -108,8 +108,8 @@ class BIDSDatasetDescription(BaseModel):
                 f"could not validate BIDS dataset description from JSON {desc_json}", e
             )
         except TypeError as e:
-            raise BIDSException(
-                f"could not validate BIDS dataset description from JSON {desc_json} as one of the keys had the wrong type: {e}"
+            raise TypeError(
+                f"could not validate BIDS dataset description from JSON {desc_json}: {e}"
             ) from e
 
 

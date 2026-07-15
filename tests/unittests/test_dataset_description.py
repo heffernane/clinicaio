@@ -108,9 +108,9 @@ def test_non_str_version():
     json_text = '{"Name": "3", "BIDSVersion": 1.10, "DatasetType": "raw"}'
 
     with pytest.raises(
-        BIDSException,
+        TypeError,
         match=escape(
-            f"could not validate BIDS dataset description from JSON {json_text} as one of the keys had the wrong type: 'float' object is not iterable"
+            f"could not validate BIDS dataset description from JSON {json_text}: 'float' object is not iterable"
         ),
     ):
         new_desc(json_text)

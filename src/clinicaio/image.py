@@ -83,7 +83,7 @@ class Image:
 
         entities_and_suffix = before_ext
         if len(entities_and_suffix) == 0:
-            raise BIDSException(
+            raise ValueError(
                 f"found image filename {filename_after_sub_ses} without any entity or suffix"
             )
 
@@ -91,7 +91,7 @@ class Image:
             extension = FileExtension(file_ext)
         except ValueError as e:
             # If this happens for legitimate files, you may need to add the file extension to the enumeration
-            raise BIDSException(
+            raise ValueError(
                 f"Found unknown file extension {file_ext} for filename {filename_after_sub_ses}"
             ) from e
 
@@ -108,8 +108,8 @@ class Image:
 
         try:
             entities = Entities.from_str_list(entities_list)
-        except BIDSException as e:
-            raise BIDSException(
+        except Exception as e:
+            raise ValueError(
                 f"found invalid entities for image filename {filename_after_sub_ses}: {e}"
             ) from e
 

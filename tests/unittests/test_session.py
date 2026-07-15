@@ -177,7 +177,7 @@ def test_scans_info_df_no_filename_column():
     session = subject.add_session("ses-A")
 
     with pytest.raises(
-        BIDSException, match="the dataframe did not have the required 'filename' column"
+        ValueError, match="the dataframe did not have the required 'filename' column"
     ):
         session.populate_image_scans_info_from_df(DataFrame({"a": [1, 2], "b": [3, 4]}))
 
@@ -223,7 +223,7 @@ def test_scans_info_df_missing_data_type_dir():
     assert image.parent_session is session
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
             "expected image/scan filename of format <data_type>/<...> for sub-01_ses-A_sfx.nii.gz in dataframe"
         ),
@@ -255,7 +255,7 @@ def test_scans_info_df_invalid_data_type():
     assert image.parent_session is session
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
             "expected valid data type as first folder of filename PET/sub-01_ses-A_sfx.nii.gz in dataframe"
         ),
@@ -287,7 +287,7 @@ def test_scans_info_df_missing_filename_sub_ses_prefix():
     assert image.parent_session is session
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
             "expected valid data type as first folder of filename PET/sub-1_ses-A_sfx.nii.gz in dataframe"
         ),

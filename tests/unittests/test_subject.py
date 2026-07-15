@@ -74,7 +74,7 @@ def test_add_session_already_existing_id(fakefs: FakeFilesystem):
     assert list(session.all_images()) == []
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
             "tried to add session of ID ses-A but it already exists within this subject"
         ),
@@ -234,7 +234,7 @@ def test_populate_sessions_info_from_df_missing_id_column(fakefs: FakeFilesystem
     subject = dataset.add_subject("sub-001")
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match="the dataframe did not have the required 'session_id' column",
     ):
         df = DataFrame(

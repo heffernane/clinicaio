@@ -24,7 +24,7 @@ def test_parse_no_extension():
 
 def test_parse_no_entities_or_suffix():
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(f"found image filename .nii.gz without any entity or suffix"),
     ):
         Image._parse_filename_components(".nii.gz")
@@ -47,7 +47,7 @@ def test_parse_no_entities_or_suffix():
 def test_parse_invalid_file_extension(file_ext: str):
     filename = f"task-rest_sfx.{file_ext}"
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match=escape(
             f"Found unknown file extension {file_ext} for filename {filename}"
         ),

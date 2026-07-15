@@ -95,9 +95,12 @@ class Entities:
                 )
             }
         except ValueError as e:
-            raise ValueError(
-                f"found entities list {entities} that had an element without a - separator"
-            ) from e
+            if "not enough values to unpack" in f"{e}":
+                raise ValueError(
+                    f"found entities list {entities} that had an element without a - separator"
+                ) from e
+            else:
+                raise
 
         return Entities(values)
 

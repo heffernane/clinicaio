@@ -30,8 +30,10 @@ def _write_rows_to_tsv(
 
     Raises
     ------
-    BIDSException:
-            if the ``first_column_name`` is not provided for one of the rows, or if the TSV file already exists.
+    ValueError:
+            if the ``first_column_name`` is not provided for one of the rows
+    FileExistsError
+            if the TSV file already exists.
     """
 
     # NOTE: Pandas handles correctly the case where different rows do not all have the same available columns:
@@ -51,7 +53,7 @@ def _write_rows_to_tsv(
 
     first_column_by_name = df.get(first_column_name)
     if first_column_by_name is None or first_column_by_name.isna().any():
-        raise BIDSException(
+        raise ValueError(
             f"one of the provided rows did not have the required column {first_column_name}"
         )
 

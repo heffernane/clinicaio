@@ -90,7 +90,9 @@ def test_read_dataset_description(fakefs: FakeFilesystem, bids_path: Path):
 def test_missing_dataset_description(fakefs: FakeFilesystem, bids_path: Path):
     with pytest.raises(
         BIDSException,
-        match=f"^could not read BIDS description from JSON file: could not open BIDS description JSON file",
+        match=escape(
+            f"No such file or directory: PosixPath('{bids_path}/dataset_description.json'"
+        ),
     ):
         BIDSDataset.populate_from_dir(
             bids_path, subjects_info=False, sessions_info=False, image_scans_info=False
@@ -393,7 +395,7 @@ def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
     assert list(subject.all_sessions()) == []
 
     with pytest.raises(
-        BIDSException,
+        ValueError,
         match="tried to add subject of ID sub-001 but it already exists within this dataset",
     ):
         dataset.add_subject("sub-001")

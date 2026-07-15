@@ -150,7 +150,7 @@ class BIDSDataset:
         """
 
         if "participant_id" not in participants_tsv_df.columns:
-            raise BIDSException(
+            raise ValueError(
                 "the dataframe did not have the required 'participant_id' column"
             )
 
@@ -182,7 +182,7 @@ class BIDSDataset:
         participants_tsv_df = _read_tsv_as_df(participants_tsv_path)
         try:
             self.populate_subjects_info_from_df(participants_tsv_df)
-        except BIDSException as e:
+        except Exception as e:
             raise BIDSException(
                 f"could not populate subjects info from TSV file {participants_tsv_path}: {e}"
             ) from e
@@ -231,7 +231,7 @@ class BIDSDataset:
 
         try:
             description = BIDSDatasetDescription._load_from_folder(bids_dir)
-        except BIDSException as e:
+        except Exception as e:
             raise BIDSException(
                 f"could not read BIDS description from JSON file: {e}"
             ) from e
@@ -302,7 +302,7 @@ class BIDSDataset:
             raise BIDSException._from_pydantic(f"invalid subject ID {id}", e)
 
         if id in self._subjects:
-            raise BIDSException(
+            raise ValueError(
                 f"tried to add subject of ID {id} but it already exists within this dataset"
             )
 

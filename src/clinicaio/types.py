@@ -52,12 +52,10 @@ class Label:
 
     def __init__(self, value: str):
         if len(value) == 0:
-            raise BIDSException("BIDS label can't be empty")
+            raise ValueError("BIDS label can't be empty")
 
         if not (value.isascii() and value.isalnum()):
-            raise BIDSException(
-                f"BIDS label {value} must be all [a-zA-Z0-9] characters"
-            )
+            raise ValueError(f"BIDS label {value} must be all [a-zA-Z0-9] characters")
         self.value = value
 
     def __str__(self) -> str:
