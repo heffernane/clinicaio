@@ -97,7 +97,7 @@ class ImageQuery:
         ImageQuery(sub_ses=[("sub-A", "ses-1"), ("sub-B", "ses-3")]
         # will match the images marked as X:
         #      1  2  3  < ses-*
-        #    A X      
+        #    A X
         #    B       X
         #    C
         # ^sub-*

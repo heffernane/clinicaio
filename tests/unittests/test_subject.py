@@ -214,6 +214,7 @@ def test_subject_info(fakefs: FakeFilesystem):
     assert len(info3) != 0
     assert info3 == {"aa": 3, "bbb": "foo", "c": None}
 
+
 # TypedDict do not support forbidding a given key, so for now disable this test.
 @pytest.mark.xfail
 def test_subject_info_invalid_session_id_field():

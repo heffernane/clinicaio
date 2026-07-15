@@ -192,7 +192,7 @@ class Entities:
 
     def __len__(self) -> int:
         """
-        Retrieves the number of key/value entity pairs.        
+        Retrieves the number of key/value entity pairs.
         """
 
         return len(self._entities)

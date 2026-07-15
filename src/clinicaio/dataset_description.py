@@ -27,7 +27,7 @@ _JSON_FILENAME = "dataset_description.json"
 class BIDSDatasetDescription(BaseModel):
     """
     The information that describes a given BIDS dataset.
-    
+
     `BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/dataset-description.html>`__
     """
 

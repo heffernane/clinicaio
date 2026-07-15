@@ -7,11 +7,11 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Optional
-from typing_extensions import NotRequired, TypedDict
 
 from pandas import DataFrame
 from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticError
+from typing_extensions import NotRequired, TypedDict
 
 from ._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
 from .entities import Entities, EntitiesLike

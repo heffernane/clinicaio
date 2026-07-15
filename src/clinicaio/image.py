@@ -6,10 +6,10 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
-from typing_extensions import TypedDict
 
 from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticError
+from typing_extensions import TypedDict
 
 from .entities import Entities
 from .types import BIDSException, DataType, FileExtension, Suffix

@@ -32,7 +32,7 @@ class BIDSDataset:
     Examples
     --------
 
-    * :doc:`/examples/assorted_queries`    
+    * :doc:`/examples/assorted_queries`
     """
 
     _subjects: dict[SubjectId, Subject]
@@ -145,7 +145,7 @@ class BIDSDataset:
             }))
             assert sub_A.info == {"a": "11", "z": "33"}
             # however it no longer has key "b" as no merging happens.
-            assert sub_B.info == {"a": "22", "z": "44"} 
+            assert sub_B.info == {"a": "22", "z": "44"}
 
         """
 
