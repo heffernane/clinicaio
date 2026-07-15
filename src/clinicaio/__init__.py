@@ -4,7 +4,34 @@ format defines a way to organize and describe brain imaging data, which themselv
 Concretely BIDS defines a standard way to organize and name folders and image files as well as defining
 tabular (TSV) and JSON metadata that supplements them.
 
+The current targeted BIDS version is 1.11.1
+
 This library provides support for querying and traversing such BIDS datasets, as well as writing them.
+However editing existing BIDS datasets is not supported as-is.
+
+Here is a sample folder structure with proper filenaming matching the BIDS specification:
+
+.. code-block:: text
+
+    .
+    ├── dataset_description.json
+    ├── participants.tsv
+    ├── README
+    ├── sub-AIBL993
+    │   ├── ses-M00
+    │   │   ├── anat
+    │   │   │   ├── sub-AIBL993_ses-M00_T1w.json
+    │   │   │   └── sub-AIBL993_ses-M00_T1w.nii.gz
+    │   │   └── sub-AIBL993_ses-M00_scans.tsv
+    │   ├── ses-M18
+    │   │   ├── anat
+    │   │   │   ├── sub-AIBL993_ses-M18_T1w.json
+    │   │   │   └── sub-AIBL993_ses-M18_T1w.nii.gz
+    │   │   ├── pet
+    │   │   │   ├── sub-AIBL993_ses-M18_task-rest_acq-pib_pet.json
+    │   │   │   └── sub-AIBL993_ses-M18_task-rest_acq-pib_pet.nii.gz
+    │   │   └── sub-AIBL993_ses-M18_scans.tsv
+    │   └── sub-AIBL993_sessions.tsv
 
 Organization
 ------------
@@ -23,7 +50,10 @@ Reading
 
 Use :py:func:`~clinicaio.dataset.BIDSDataset.populate_from_dir` to read an existing BIDS dataset directory:
 it will walk the entire BIDS folder hierarchy to build a tree of Python data-structures/classes representing each
-subject/session/image that were found, allowing subsequent queries and generally traversing the dataset.
+subject/session/image that were found, allowing subsequent queries and generally traversing the dataset. Note that
+this library supports extracting the subject/session/images informations that are available in TSV files: you should
+only enable them individually if you need the data, since reading those TSV files takes a substantial time compared
+to reading the rest of the BIDS dataset.
 
 Querying
 --------
@@ -67,7 +97,13 @@ Re-exports
 ----------
 
 This library re-exports all classes that you would ever have to refer to manually, meaning they are
-accessible as e.g. ``from clinicaio import BIDSDataset, ImageQuery`` directly instead of ``from clinicaio.dataset import BIDSDataset; from clinicaio.image_query import ImageQuery``
+accessible as e.g. ``from clinicaio import BIDSDataset, ImageQuery`` directly instead of ``from clinicaio.dataset import BIDSDataset; from clinicaio.image_query import ImageQuery``.
+
+Installation
+------------
+
+ClinicaIO can be installed from PyPI as ``clinicaio``. For example with poetry: ``poetry add clinicaio``.
+
 """
 
 from .dataset import BIDSDataset

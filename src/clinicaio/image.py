@@ -19,6 +19,13 @@ if TYPE_CHECKING:
 
 @dataclass
 class Image:
+    """
+    An image from a BIDS dataset. You can obtain one by :doc:`querying <../index>` from an existing dataset,
+    or by :doc:`writing a new dataset <../index>` in which case you will likely want to create
+    the NIFTI and eventually companion files, using :py:meth:`get_nifti_image_path()` and
+    :py:meth:`get_image_companion_path()`.
+    """
+
     parent_session: Session = field(repr=False, compare=False)
     data_type: DataType
 

@@ -27,7 +27,7 @@ from .types import BIDSException, FileExtension, SubjectId
 @dataclass
 class BIDSDataset:
     """
-    A BIDS dataset
+    A BIDS dataset. See the :doc:`general organisation of the library <../index>`.
 
     Examples
     --------
@@ -106,7 +106,7 @@ class BIDSDataset:
         The dataframe must have a ``participant_id`` column which corresponds to
         a subject's ID that's already present in this dataset. The other columns
         will be used as information for the subject at hand: they will not be
-        merged with the existing ones, instead they'll be replaced entirely.
+        merged with the information from the existing subjects, instead they'll be replaced entirely.
 
         Warnings
         --------

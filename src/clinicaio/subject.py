@@ -142,7 +142,7 @@ class Subject:
         The dataframe must have a ``session_id`` column which corresponds to
         a session's ID that's already present in this dataset's subject. The other columns
         will be used as information for the session at hand: they will not be
-        merged with the existing ones, instead they'll be replaced entirely.
+        merged with the information from the existing sessions, instead they'll be replaced entirely.
 
         Warnings
         --------

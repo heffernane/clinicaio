@@ -179,13 +179,13 @@ class Session:
         e.g. ``<data type>/sub-..._ses-..._<.....>.nii.gz``. The corresponding
         Image must already be present in this session. The other columns
         will be used as information for the image at hand: they will not be
-        merged with the existing ones, instead they'll be replaced entirely.
+        merged with the information from the existing images, instead they'll be replaced entirely.
 
         Warnings
         --------
         You should only ever use this function if it is more convenient
         for your use case when you are writing a new BIDS dataset. Filling-in
-        the information directly from :py:meth:`Session.write_image` should be favored.
+        the information directly from :py:meth:`Session.write_image() <clinicaio.session.Session.write_image>` should be favored.
         """
         if "filename" not in scans_tsv_df.columns:
             raise BIDSException(
