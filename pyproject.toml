@@ -41,6 +41,8 @@ dependencies = [
     "pandas",
     "packaging",
     "pydantic",
+    # For TypedDict mostly, notably the extra_items constructor argument available only for Python >=3.15
+    "typing-extensions >= 4.16",
 ]
 
 [project.urls]
