@@ -161,7 +161,7 @@ class Image:
 
 
 # FIXME: https://github.com/python/mypy/issues/18176
-class ImageScanInfo(TypedDict, extra_items=Any): # type: ignore
+class ImageScanInfo(TypedDict, extra_items=Any):  # type: ignore
     """
     `BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#scans-file>`__
     """

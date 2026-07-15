@@ -278,7 +278,7 @@ class Subject:
 
 # Populated from participants.tsv from root of dataset
 # FIXME: https://github.com/python/mypy/issues/18176
-class SubjectInfo(TypedDict, extra_items=Any): # type: ignore
+class SubjectInfo(TypedDict, extra_items=Any):  # type: ignore
     """
     `BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file>`__
     """
