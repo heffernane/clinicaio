@@ -31,5 +31,5 @@ jobs:
         run: make typecheck
       - name: Run Jupyter notebooks
         run: |
-          echo -e "from pathlib import Path\ntest_bids_read_path=Path('$PWD/tests/data/bids')\ntest_bids_write_path=Path('/tmp/gen_bids_clinicaio/')" > notebooks/_env.py
+          echo -e "from pathlib import Path\ntest_bids_read_path=Path('$PWD/tests/data/bids')\ntest_bids_write_path=Path('/tmp/gen_bids_clinicaio/')" > docs/examples/_env.py
           make run-notebooks
