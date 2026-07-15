@@ -80,6 +80,27 @@ class ImageQuery:
                     suffix="pet",
             )
             images = dataset.query_images(image_query)
+
+    Cartesian vs cross-product of subjects/sessions:
+
+    .. code-block:: python
+
+        ImageQuery(subjects={"sub-A", "sub-B"}, sessions={"ses-1", "ses-3"}
+        # will match the images marked as X:
+        #      1  2  3  < ses-*
+        #    A X     X
+        #    B X     X
+        #    C
+        # ^sub-*
+
+        ImageQuery(sub_ses={"sub-A": {"ses-1"}, "sub-B": {"ses-3"}})
+        ImageQuery(sub_ses=[("sub-A", "ses-1"), ("sub-B", "ses-3")]
+        # will match the images marked as X:
+        #      1  2  3  < ses-*
+        #    A X      
+        #    B       X
+        #    C
+        # ^sub-*
     """
 
     subjects: set[SubjectId]
