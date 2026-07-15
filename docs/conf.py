@@ -39,6 +39,9 @@ intersphinx_mapping = {
     "packaging": ("https://packaging.pypa.io/en/stable/", None),
 }
 
+# https://myst-nb.readthedocs.io/en/stable/computation/execute.html
+nb_execution_mode = "off"
+
 # -- autoapi configuration ---------------------------------------------------
 # https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html
 

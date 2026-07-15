@@ -1,5 +1,6 @@
-/notebooks/_env.py
+/docs/examples/_env.py
 /.vscode
+/docs/jupyter_execute
 .ruff_cache
 
 # Byte-compiled / optimized / DLL files

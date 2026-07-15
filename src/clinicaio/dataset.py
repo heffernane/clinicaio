@@ -26,7 +26,14 @@ from .types import BIDSException, FileExtension, SubjectId
 
 @dataclass
 class BIDSDataset:
-    """A BIDS dataset"""
+    """
+    A BIDS dataset
+
+    Examples
+    --------
+
+    * :doc:`/examples/assorted_queries`    
+    """
 
     _subjects: dict[SubjectId, Subject]
     bids_path: Path
@@ -362,17 +369,15 @@ class BIDSDataset:
         Returns all the images matching the query.
         See :py:class:`~clinicaio.image_query.ImageQuery` for details on the query itself.
 
-        Raises
-        ------
-        BIDSException
-            if both ``query.sub_ses`` and either ``query.subjects`` or ``query.sessions`` are specified
-            at the same time: the former operates on a cross-product basis, while the later two operate
-            on a cartesian-product when combined, so it does not make much sense to have both at the same time
-
         See also
         --------
         * :py:meth:`query_images_nifti_paths`
         * :py:meth:`query_images_companions_paths`
+
+        Examples
+        --------
+
+        * :doc:`/examples/assorted_queries`
         """
         filtered_subjects = (
             self.all_subjects()
@@ -429,6 +434,11 @@ class BIDSDataset:
         See also
         --------
         * :py:meth:`Image.get_nifti_image_path() <clinicaio.image.Image.get_nifti_image_path>`
+
+        Examples
+        --------
+
+        * :doc:`/examples/assorted_queries`
         """
         return (image.get_nifti_image_path() for image in self.query_images(query))
 
@@ -458,6 +468,11 @@ class BIDSDataset:
         --------
         * :py:meth:`query_images`
         * :py:meth:`Image.get_image_companion_path() <clinicaio.image.Image.get_image_companion_path>`
+
+        Examples
+        --------
+
+        * :doc:`/examples/assorted_queries`
         """
         return (
             path

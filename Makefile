@@ -14,7 +14,7 @@ test: install
 
 .PHONY: clean.doc
 clean.doc:
-	@$(RM) -rf docs/_build
+	@$(RM) -rf docs/_build docs/jupyter_execute
 
 .PHONY: doc
 doc: clean.doc install.doc
@@ -26,7 +26,7 @@ install.doc: check.lock
 
 .PHONY: notebooks
 notebooks: install
-	@$(POETRY) run jupyter lab ./notebooks/
+	@$(POETRY) run jupyter lab ./docs/examples/
 
 .PHONY: typecheck
 typecheck: install
@@ -34,4 +34,4 @@ typecheck: install
 
 .PHONY: run-notebooks
 run-notebooks: install
-	@$(POETRY) run jupyter-execute ./notebooks/*.ipynb
+	@$(POETRY) run jupyter-execute ./docs/examples/*.ipynb

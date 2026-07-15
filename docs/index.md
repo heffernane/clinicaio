@@ -9,4 +9,5 @@ This is the documentation for ClinicaIO, a Python library for input/output manag
 
 changelog
 license
+examples/index
 ```

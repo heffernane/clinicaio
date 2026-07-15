@@ -52,6 +52,8 @@ class ImageQuery:
     Examples
     --------
 
+    * :doc:`/examples/assorted_queries`
+
     .. code-block:: python
 
             ImageQuery(subjects=["sub-ADNI027S0074"])
