@@ -149,6 +149,11 @@ class Subject:
         You should only ever use this function if it is more convenient
         for your use case when you are writing a new BIDS dataset. Filling-in
         the information directly from :py:meth:`add_session` should be favored.
+
+        Examples
+        --------
+
+        See :py:meth:`BIDSDataset.populate_subjects_info_from_df() <clinicaio.dataset.BIDSDataset.populate_subjects_info_from_df>`
         """
 
         assert not isinstance(self._sessions, Session), (

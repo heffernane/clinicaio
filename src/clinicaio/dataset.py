@@ -113,6 +113,39 @@ class BIDSDataset:
         You should only ever use this function if it is more convenient
         for your use case when you are writing a new BIDS dataset. Filling-in
         the information directly from :py:meth:`add_subject` should be favored.
+
+        Examples
+        --------
+
+        .. code-block:: python
+
+            from pathlib import Path
+
+            from pandas import DataFrame
+
+            from clinicaio.dataset_description import BIDSDatasetDescription, BIDSDatasetType
+            from clinicaio.subject import SubjectInfo
+
+            dataset = BIDSDataset(
+                bids_path=Path("/tmp/bids_test"),
+                description=BIDSDatasetDescription.new(
+                    BIDSDatasetType.RAW,
+                    name="Test Dataset",
+                    bids_version="1.10.0",
+                ),
+            )
+            sub_A = dataset.add_subject("sub-A")
+            sub_B = dataset.add_subject("sub-B", SubjectInfo.from_fields({"a": "bb", "b": "22"}))
+            # sub_A.info is empty
+            # sub_B.info only has key "a" with value "bb" and key "b" with value "22"
+            dataset.populate_subjects_info_from_df(DataFrame({
+                "participant_id": ["sub-A", "sub-B"],
+                "a": ["11", "22"],
+                "z": ["33", "44"],
+            }))
+            # sub_A.info has key "a" with value "11" and key "z" with value "33"
+            # sub_B.info has key "a" with value "22" and key "z" with value "44", however it no longer has key "b" as no merging happens.
+
         """
 
         if "participant_id" not in participants_tsv_df.columns:
