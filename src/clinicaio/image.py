@@ -99,14 +99,12 @@ class Image:
         suffix = None
         if "-" not in entities_list[-1]:
             try:
-                suffix = TypeAdapter(Suffix).validate_python(entities_list[-1])
+                suffix = TypeAdapter(Suffix).validate_python(entities_list.pop(-1))
             except PydanticError as e:
                 raise BIDSException._from_pydantic(
                     f"found invalid suffix label for image filename {filename_after_sub_ses}",
                     e,
                 )
-
-            entities_list = entities_list[:-1]
 
         try:
             entities = Entities.from_str_list(entities_list)
