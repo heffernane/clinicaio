@@ -40,6 +40,11 @@ the same session). You will want to use the various specific methods (e.g. :py:m
 instead of manually filtering from the various ``.all_*()`` methods as it provides far greater performance due
 to internal data structures.
 
+Examples
+--------
+
+* :doc:`/examples/assorted_queries`
+
 Writing
 -------
 
@@ -52,6 +57,11 @@ get its NIFTI path (and companion files paths if applicable) and actually write 
 the BIDS will not be valid. Once this is done the dataset can be written using
 :py:meth:`~clinicaio.dataset.BIDSDataset.write_to_folder` and :py:meth:`~clinicaio.dataset.BIDSDataset.write_root_file`
 on the dataset.
+
+Examples
+--------
+
+* :doc:`/examples/demo_BIDS_write_images`
 
 Re-exports
 ----------
