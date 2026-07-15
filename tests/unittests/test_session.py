@@ -206,7 +206,7 @@ def test_scans_info_df_none_filename():
         )
     )
 
-    assert image.scan_info.all_fields() == {"a": "2", "b": "4"}
+    assert image.scan_info == {"a": "2", "b": "4"}
 
 
 def test_scans_info_df_missing_data_type_dir():
@@ -238,7 +238,7 @@ def test_scans_info_df_missing_data_type_dir():
             )
         )
 
-    assert image.scan_info.all_fields() == {}
+    assert image.scan_info == {}
 
 
 def test_scans_info_df_invalid_data_type():
@@ -270,7 +270,7 @@ def test_scans_info_df_invalid_data_type():
             )
         )
 
-    assert image.scan_info.all_fields() == {}
+    assert image.scan_info == {}
 
 
 def test_scans_info_df_missing_filename_sub_ses_prefix():
@@ -303,7 +303,7 @@ def test_scans_info_df_missing_filename_sub_ses_prefix():
             )
         )
 
-    assert image.scan_info.all_fields() == {}
+    assert image.scan_info == {}
 
 
 def test_skipped_invalid_datatype_or_no_file_extension(fakefs: FakeFilesystem):

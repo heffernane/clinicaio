@@ -184,7 +184,7 @@ def test_read_participants_tsv_na_none_participant_id(
     assert subject.id == "sub-001"
     assert subject.parent_dataset is dataset
     assert subject.sessions_count() == 0
-    assert subject.info == SubjectInfo.from_fields({"a": "abc", "b": "bce", "c": "cef"})
+    assert subject.info == SubjectInfo({"a": "abc", "b": "bce", "c": "cef"})
 
 
 def test_read_participants_tsv_not_found_participant_by_id(
@@ -214,7 +214,7 @@ def test_read_participants_tsv_not_found_participant_by_id(
     assert subject.id == "sub-001"
     assert subject.parent_dataset is dataset
     assert subject.sessions_count() == 0
-    assert subject.info == SubjectInfo.from_fields({"a": "abc", "b": "bce", "c": "cef"})
+    assert subject.info == SubjectInfo({"a": "abc", "b": "bce", "c": "cef"})
 
 
 def test_read_dataset_subject_structure(fakefs: FakeFilesystem, bids_path: Path):
@@ -263,10 +263,8 @@ def test_read_dataset_subject_structure(fakefs: FakeFilesystem, bids_path: Path)
     assert subjects[0].id != "sub-01"
     assert subjects[1].id == "sub-01"
     assert subjects[1].id != "sub-001"
-    assert subjects[0].info == SubjectInfo.from_fields({})
-    assert subjects[1].info == SubjectInfo.from_fields({})
-    assert subjects[0].info.is_empty()
-    assert subjects[1].info.is_empty()
+    assert subjects[0].info == {}
+    assert subjects[1].info == {}
     assert subjects[0].parent_dataset is dataset
     assert subjects[1].parent_dataset is dataset
     assert subjects[0].sessions_count() == 0
@@ -389,7 +387,7 @@ def test_add_subject_duplicate_id(fakefs: FakeFilesystem):
     assert list(dataset.all_subjects())[0] is subject
 
     assert subject.id == "sub-001"
-    assert subject.info.is_empty()
+    assert subject.info == {}
     assert subject.parent_dataset is dataset
     assert subject.sessions_count() == 0
     assert list(subject.all_sessions()) == []
@@ -405,8 +403,7 @@ def test_add_subject_none_info(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
     subject = dataset.add_subject("sub-001", None)
-    assert subject.info.all_fields() == {}
-    assert subject.info.is_empty()
+    assert subject.info == {}
 
 
 def test_add_subject_none_info_implicit(fakefs: FakeFilesystem):
@@ -414,17 +411,15 @@ def test_add_subject_none_info_implicit(fakefs: FakeFilesystem):
 
     # NOTE: no info is passed explicitely to the method
     subject = dataset.add_subject("sub-001")
-    assert subject.info.all_fields() == {}
-    assert subject.info.is_empty()
+    assert subject.info == {}
 
 
 def test_add_subject_provided_info(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
-    dct = {"a": "abc", "bcd": "a"}
-    subject = dataset.add_subject("sub-001", SubjectInfo.from_fields(dct))
-    assert subject.info.all_fields() == dct
-    assert subject.info == SubjectInfo.from_fields(dct)
+    dct: SubjectInfo = {"a": "abc", "bcd": "a"}
+    subject = dataset.add_subject("sub-001", dct)
+    assert subject.info == dct
 
 
 def test_add_subject_invalid_id(fakefs: FakeFilesystem):

@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Optional
+from typing_extensions import TypedDict
 
 from pandas import DataFrame
 from pydantic import TypeAdapter
@@ -64,7 +65,7 @@ class Subject:
         session = Session(
             parent_subject=self,
             id=id,
-            info=SessionInfo.from_fields({}) if info is None else info,
+            info=TypeAdapter(SessionInfo).validate_python({}) if info is None else info,
         )
         self._sessions[id] = session
 
@@ -130,9 +131,9 @@ class Subject:
                 subject_path / self._sessions_tsv_file_name,
                 first_column_name="session_id",
                 rows=(
-                    session.info.all_fields_with_id(session)
+                    {"session_id": session.id} | session.info
                     for session in self.all_sessions()
-                    if not session.info.is_empty()
+                    if len(session.info) != 0
                 ),
             )
 
@@ -182,7 +183,12 @@ class Subject:
                 continue
                 # raise BIDSException(f"could not find session of ID {session_id} referenced by TSV file {sessions_tsv_path}")
 
-            session.info = SessionInfo.from_fields(info)
+            try:
+                session.info = TypeAdapter(SessionInfo).validate_python(info)
+            except PydanticError as e:
+                raise BIDSException._from_pydantic(
+                    f"invalid session info {info} in dataframe", e
+                )
 
     def _populate_sessions_info_from_tsv(self) -> None:
         """Reads the subject's sessions.tsv and fills out info in all sessions"""
@@ -251,7 +257,7 @@ class Subject:
                 session = Session(
                     parent_subject=self,
                     id=None,
-                    info=SessionInfo.from_fields({}),
+                    info=TypeAdapter(SessionInfo).validate_python({}),
                 )
                 unhandled_entries |= session._populate_images_from_folder(
                     image_scans_info=image_scans_info
@@ -271,33 +277,7 @@ class Subject:
 
 
 # Populated from participants.tsv from root of dataset
-@dataclass(init=False)
-class SubjectInfo:
+class SubjectInfo(TypedDict, extra_items=Any):
     """
     `BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file>`__
     """
-
-    # FIXME: proper typing for the fields that BIDS defines?
-    # age, handedness, etc.
-    _other_fields: dict[str, Any]
-
-    def __init__(self, *, other_fields: dict[str, Any]):
-        if "participant_id" in other_fields:
-            raise BIDSException("found unexpected participant_id field in subject info")
-
-        self._other_fields = other_fields
-
-    @classmethod
-    def from_fields(cls, fields: dict[str, Any]) -> SubjectInfo:
-        return SubjectInfo(
-            other_fields={} if all(v is None for v in fields.values()) else fields,
-        )
-
-    def all_fields(self) -> dict[str, Any]:
-        return self._other_fields
-
-    def all_fields_with_id(self, subject: Subject) -> dict[str, Any]:
-        return self.all_fields() | {"participant_id": subject.id}
-
-    def is_empty(self) -> bool:
-        return len(self._other_fields) == 0

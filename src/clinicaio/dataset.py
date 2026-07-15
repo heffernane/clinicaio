@@ -135,16 +135,17 @@ class BIDSDataset:
                 ),
             )
             sub_A = dataset.add_subject("sub-A")
-            sub_B = dataset.add_subject("sub-B", SubjectInfo.from_fields({"a": "bb", "b": "22"}))
-            # sub_A.info is empty
-            # sub_B.info only has key "a" with value "bb" and key "b" with value "22"
+            sub_B = dataset.add_subject("sub-B", {"a": "bb", "b": "22"})
+            assert sub_A.info == {}
+            assert sub_B.info == {"a": "bb", "b": "22"}
             dataset.populate_subjects_info_from_df(DataFrame({
                 "participant_id": ["sub-A", "sub-B"],
                 "a": ["11", "22"],
                 "z": ["33", "44"],
             }))
-            # sub_A.info has key "a" with value "11" and key "z" with value "33"
-            # sub_B.info has key "a" with value "22" and key "z" with value "44", however it no longer has key "b" as no merging happens.
+            assert sub_A.info == {"a": "11", "z": "33"}
+            # however it no longer has key "b" as no merging happens.
+            assert sub_B.info == {"a": "22", "z": "44"} 
 
         """
 
@@ -171,7 +172,7 @@ class BIDSDataset:
                 continue
                 # raise BIDSException(f"could not find subject of ID {subject_id} referenced by TSV file {participants_tsv_path}")
 
-            subject.info = SubjectInfo.from_fields(info)
+            subject.info = TypeAdapter(SubjectInfo).validate_python(info)
 
     def _populate_subjects_info_from_tsv(self) -> None:
         participants_tsv_path = self._get_full_path() / self._participants_tsv_file_name
@@ -308,7 +309,7 @@ class BIDSDataset:
         subject = Subject(
             parent_dataset=self,
             id=id,
-            info=SubjectInfo.from_fields({}) if info is None else info,
+            info=TypeAdapter(SubjectInfo).validate_python({}) if info is None else info,
         )
         self._subjects[id] = subject
 
@@ -347,9 +348,9 @@ class BIDSDataset:
             tsv_path=self.bids_path / "participants.tsv",
             first_column_name="participant_id",
             rows=(
-                subject.info.all_fields_with_id(subject)
+                {"participant_id": subject.id} | subject.info
                 for subject in self.all_subjects()
-                if not subject.info.is_empty()
+                if len(subject.info) != 0
             ),
         )
 

@@ -90,9 +90,7 @@ def test_parse_entities_suffix():
 def test_parse_missing_key_value_separator(filename: str):
     with pytest.raises(
         ValueError,
-        match=escape(
-            "found entities list "
-        )
+        match=escape("found entities list ")
         + ".+"
         + escape(" that had an element without a - separator"),
     ):

@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Optional
+from typing_extensions import NotRequired, TypedDict
 
 from pandas import DataFrame
 from pydantic import TypeAdapter
@@ -70,10 +71,10 @@ class Session:
 
         # *_scans.tsv writing
         rows = (
-            image.scan_info.all_fields()
+            image.scan_info
             | {"filename": str(image.get_nifti_image_path().relative_to(session_path))}
             for image in self.all_images()
-            if not image.scan_info.is_empty()
+            if len(image.scan_info) != 0
         )
         _write_rows_to_tsv(
             session_path / self._scans_tsv_file_name,
@@ -251,9 +252,7 @@ class Session:
                     f"could not find image for filename {image_filename} in dataframe"
                 )
 
-            image.scan_info = ImageScanInfo(
-                other_fields={} if all(v is None for v in info) else info
-            )
+            image.scan_info = TypeAdapter(ImageScanInfo).validate_python(info)
 
     # read the session's _scans.tsv and fill out scan info for all images
     def _populate_image_scans_info_from_tsv(self) -> None:
@@ -369,54 +368,11 @@ class Session:
 
 
 # Populated from sub-<label>/sub-<label>_sessions.tsv
-@dataclass
-class SessionInfo:
+class SessionInfo(TypedDict, extra_items=Any):
     """
     `BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#sessions-file>`__
     """
 
     # TODO: actual date type (handle BIDS units)
-    acquisition_time: Optional[str]
-    pathology: Optional[str]
-    other_fields: dict[str, Any]
-
-    @classmethod
-    def from_fields(cls, fields: dict[str, Any]) -> SessionInfo:
-        if "session_id" in fields:
-            raise BIDSException("found unexpected session_id field in session info")
-
-        has_any_field = any(v is not None for v in fields)
-
-        return SessionInfo(
-            acquisition_time=fields.pop("acq_time", None),
-            pathology=fields.pop("pathology", None),
-            other_fields=fields if has_any_field else {},
-        )
-
-    def all_fields(self) -> dict[str, Any]:
-        fields = self.other_fields
-        if self.acquisition_time is not None:
-            # NOTE: fields = fields | {...} is not the same as fields |= {}: the former creates
-            # a new dict while the later overwrites the existing one, which is not wanted here.
-            fields = fields | {"acq_time": self.acquisition_time}
-        if self.pathology is not None:
-            fields = fields | {"pathology": self.pathology}
-
-        return fields
-
-    def all_fields_with_id(self, session: Session) -> dict[str, Any]:
-        assert session.id is not None, (
-            "can not attach ID field to info for implicit session without ID"
-        )
-
-        return self.all_fields() | {"session_id": session.id}
-
-    # It's preferable to avoid having two None-like SessionInfo: the real None stored in
-    # session.info, and a SessionInfo with all None and {} fields. As such, just always
-    # store a non optional SessionInfo in session.info, and check here if any field is actually
-    # set. This is notably necessary to avoid having code that relies on the info being None
-    # when there are some TSV files that have a row with all n/a values (except for the ID column)
-    def is_empty(self) -> bool:
-        return len(self.other_fields) == 0 and all(
-            v is None for v in [self.acquisition_time, self.pathology]
-        )
+    acq_time: NotRequired[str]
+    pathology: NotRequired[str]

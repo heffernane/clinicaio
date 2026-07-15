@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
+from typing_extensions import TypedDict
 
 from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticError
@@ -159,17 +160,7 @@ class Image:
         return self._get_image_base_full_path().with_suffix(f".{extension}")
 
 
-@dataclass
-class ImageScanInfo:
+class ImageScanInfo(TypedDict, extra_items=Any):
     """
     `BIDS specification <https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#scans-file>`__
     """
-
-    # TODO: proper typing for fields defined in BIDS specification
-    other_fields: dict[str, Any]
-
-    def all_fields(self) -> dict[str, Any]:
-        return self.other_fields
-
-    def is_empty(self) -> bool:
-        return len(self.other_fields) == 0
