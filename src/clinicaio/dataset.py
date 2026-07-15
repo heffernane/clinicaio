@@ -218,7 +218,7 @@ class BIDSDataset:
         report_unhandled_entries :
                 A function that will be called with the list of relative paths to files and directories that were
                 ignored/not handled while populating the dataset. This is mostly useful for debugging purpose when
-                your dataset has some unconvential layout or extra BIDS derivatives files/folders.
+                your dataset has some unconventional layout or extra BIDS derivatives files/folders.
 
         Raises
         ------

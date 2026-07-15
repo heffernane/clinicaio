@@ -51,7 +51,7 @@ Reading
 Use :py:func:`~clinicaio.dataset.BIDSDataset.populate_from_dir` to read an existing BIDS dataset directory:
 it will walk the entire BIDS folder hierarchy to build a tree of Python data-structures/classes representing each
 subject/session/image that were found, allowing subsequent queries and generally traversing the dataset. Note that
-this library supports extracting the subject/session/images informations that are available in TSV files: you should
+this library supports extracting the subject/session/images information that are available in TSV files: you should
 only enable them individually if you need the data, since reading those TSV files takes a substantial time compared
 to reading the rest of the BIDS dataset.
 

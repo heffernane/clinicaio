@@ -107,7 +107,7 @@ def test_add_session_none_info_implicit(fakefs: FakeFilesystem):
     assert subject.id == "sub-001"
     assert len(subject.info) == 0
 
-    # NOTE: the info is not passed explicitely
+    # NOTE: the info is not passed explicitly
     session = subject.add_session("ses-A")
     assert session.id == "ses-A"
     assert session.parent_subject is subject

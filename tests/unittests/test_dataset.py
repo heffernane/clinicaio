@@ -409,7 +409,7 @@ def test_add_subject_none_info(fakefs: FakeFilesystem):
 def test_add_subject_none_info_implicit(fakefs: FakeFilesystem):
     dataset = BIDSDataset(Path("/does/not/exist"), _get_dataset_description())
 
-    # NOTE: no info is passed explicitely to the method
+    # NOTE: no info is passed explicitly to the method
     subject = dataset.add_subject("sub-001")
     assert subject.info == {}
 
