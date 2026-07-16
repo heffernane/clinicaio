@@ -67,8 +67,9 @@ data type/entities/suffix they have.
 However for queries that aren't so image-focused you may need to traverse the BIDS dataset manually, which offers
 greater flexibility in terms of queries (e.g. finding all sessions that have both a T1 and a PET image for
 the same session). You will want to use the various specific methods (e.g. :py:meth:`~clinicaio.dataset.BIDSDataset.subject_by_id`)
-instead of manually filtering from the various ``.all_*()`` methods as it provides far greater performance due
-to internal data structures.
+instead of manually iterating through the various ``.all_*()`` methods until you find what you're looking for:
+for example :py:meth:`~clinicaio.dataset.BIDSDataset.subject_by_id` will be ``O(1)`` while manually iterating with
+a ``for`` loop will be ``O(n)``.
 
 Examples
 --------
