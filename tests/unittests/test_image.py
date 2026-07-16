@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from re import escape
+from typing import Optional
 
 import pytest
 from _utils import _get_dataset_description
@@ -55,26 +56,21 @@ def test_parse_invalid_file_extension(file_ext: str):
         Image._parse_filename_components(filename)
 
 
-def test_parse_entities_no_suffix():
-    assert Image._parse_filename_components("task-rest.nii.gz") == (
-        Entities.from_dict({"task": "rest"}),
-        None,
-        FileExtension.NII_GZ,
-    )
-
-
-def test_parse_suffix_no_entities():
-    assert Image._parse_filename_components("rest.nii.gz") == (
-        Entities.from_dict({}),
-        "rest",
-        FileExtension.NII_GZ,
-    )
-
-
-def test_parse_entities_suffix():
-    assert Image._parse_filename_components("trc-18FFDG_task-rest_sfx.nii.gz") == (
-        Entities.from_dict({"trc": "18FFDG", "task": "rest"}),
-        "sfx",
+@pytest.mark.parametrize(
+    ["filename", "entities", "suffix"],
+    [
+        # no suffix
+        ("task-rest.nii.gz", {"task": "rest"}, None),
+        # suffix but no entities
+        ("rest.nii.gz", {}, "rest"),
+        # both suffix and entities
+        ("trc-18FFDG_task-rest_sfx.nii.gz", {"trc": "18FFDG", "task": "rest"}, "sfx"),
+    ],
+)
+def test_parse_entities(filename: str, entities: dict[str, str], suffix: Optional[str]):
+    assert Image._parse_filename_components(filename) == (
+        Entities.from_dict(entities),  # type: ignore
+        suffix,
         FileExtension.NII_GZ,
     )
 
