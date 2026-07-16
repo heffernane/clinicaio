@@ -39,7 +39,7 @@ class BIDSDataset:
     bids_path: Path
     description: BIDSDatasetDescription
 
-    def __init__(self, bids_path: Path, description: BIDSDatasetDescription):
+    def __init__(self, bids_path: str | Path, description: BIDSDatasetDescription):
         """
         Creates a new BIDS dataset. Useful when you want to write a new dataset to the filesystem.
 
@@ -47,7 +47,7 @@ class BIDSDataset:
         --------
         * :py:meth:`write_to_folder()`
         """
-        self.bids_path = bids_path
+        self.bids_path = Path(bids_path)
         self.description = description
         self._subjects = {}
 

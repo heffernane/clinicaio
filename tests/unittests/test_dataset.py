@@ -578,3 +578,8 @@ def test_read_dataset_str_path(fakefs: FakeFilesystem):
     images = list(dataset.all_images())
     assert len(images) == 1
     assert images[0].get_nifti_image_path() == nifti_path
+
+def test_dataset_init_with_str_path(fakefs: FakeFilesystem):
+    dataset = BIDSDataset("/tmp/bids_test", _get_dataset_description())
+    assert dataset.bids_path == Path("/tmp/bids_test")
+    assert dataset.description == _get_dataset_description()
