@@ -103,7 +103,7 @@ accessible as e.g. ``from clinicaio import BIDSDataset, ImageQuery`` directly in
 Installation
 ------------
 
-ClinicaIO can be installed from PyPI as ``clinicaio``. For example with poetry: ``poetry add clinicaio``.
+ClinicaIO can be installed from PyPI as ``clinicaio``: ``pip install clinicaio``.
 
 """
 
