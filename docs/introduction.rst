@@ -47,6 +47,9 @@ files that provide extra information on the image that are not included in the N
 These companion files are notably produced when converting DICOM to NIFTI, as the former provides a wider set of
 metadata than the later.
 
+Note that any point in this tree you can either go "down" (child subjects/sessions/images), or back "up" the tree
+(so going from an image to its parent session/subject/dataset) with the ``parent_*`` field provided by each class.
+
 Reading
 -------
 
