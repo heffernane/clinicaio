@@ -2,6 +2,8 @@ from pathlib import Path
 from re import escape
 
 import pytest
+from pandas import DataFrame
+from pandas.testing import assert_frame_equal
 from pyfakefs.fake_filesystem import FakeFilesystem
 
 from clinicaio._tsv_utils import _read_tsv_as_df, _write_rows_to_tsv
@@ -28,7 +30,7 @@ def test_read_tsv_no_tab_separator(fakefs: FakeFilesystem):
     assert len(cols) == 1
     assert cols[0] == "a,b"
 
-    assert df["a,b"][0] == "1,2"
+    assert_frame_equal(df, DataFrame({"a,b": ["1,2"]}))
 
 
 def test_read_tsv_tab_separator(fakefs: FakeFilesystem):
@@ -41,8 +43,7 @@ def test_read_tsv_tab_separator(fakefs: FakeFilesystem):
     assert len(cols) == 2
     assert cols == ["a", "b"]
 
-    assert list(df["a"]) == ["kkk"]
-    assert list(df["b"]) == ["ppp"]
+    assert_frame_equal(df, DataFrame({"a": ["kkk"], "b": ["ppp"]}))
 
 
 # We want to make sure that the DataFrame allows mixed-type cells so that
@@ -61,8 +62,7 @@ def test_read_tsv_object_format(fakefs: FakeFilesystem):
     assert cols == ["a", "b"]
     assert list(df.dtypes) == [object, object]
 
-    assert list(df["a"]) == ["111", "kkk"]
-    assert list(df["b"]) == ["ppp", "222"]
+    assert_frame_equal(df, DataFrame({"a": ["111", "kkk"], "b": ["ppp", "222"]}))
 
 
 def test_read_tsv_na_none(fakefs: FakeFilesystem):
@@ -78,8 +78,9 @@ def test_read_tsv_na_none(fakefs: FakeFilesystem):
     assert cols == ["a", "b"]
     assert list(df.dtypes) == [object, object]
 
-    assert list(df["a"]) == ["111", None, "kkk"]
-    assert list(df["b"]) == ["ppp", "333", "222"]
+    assert_frame_equal(
+        df, DataFrame({"a": ["111", None, "kkk"], "b": ["ppp", "333", "222"]})
+    )
 
 
 def test_read_tsv_non_existent_file(fakefs: FakeFilesystem):
