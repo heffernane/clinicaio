@@ -83,6 +83,22 @@ def test_read_tsv_na_none(fakefs: FakeFilesystem):
     )
 
 
+def test_read_tsv_empty_str_none(fakefs: FakeFilesystem):
+    tsv_path = Path("/tmp/foo.tsv")
+
+    fakefs.create_file(file_path=tsv_path, contents="a\tb\n\tppp\nn/a\t\n\t")
+
+    df = _read_tsv_as_df(tsv_path)
+    cols = list(df.columns)
+    assert len(cols) == 2
+    assert cols == ["a", "b"]
+    assert list(df.dtypes) == [object, object]
+
+    assert_frame_equal(
+        df, DataFrame({"a": [None, None, None], "b": ["ppp", None, None]})
+    )
+
+
 def test_read_tsv_non_existent_file(fakefs: FakeFilesystem):
     tsv_path = Path("/tmp/doesnotexist.tsv")
 
