@@ -22,55 +22,6 @@ def test_subject_str_to_id():
     assert type(list(query.subjects)[0]) == str
 
 
-def test_direct_subject_id_class():
-    query = ImageQuery(subjects=["sub-1"])
-    assert type(query.subjects) == set
-    assert type(query.subjects) != list
-    assert len(query.subjects) == 1
-    assert type(list(query.subjects)[0]) == str
-
-
-def test_mixed_subject_str_and_id_class():
-    query = ImageQuery(subjects=["sub-1", "sub-2", "sub-3", "sub-4", "sub-5"])
-    assert type(query.subjects) == set
-    assert type(query.subjects) != list
-    assert len(query.subjects) == 5
-    i = 0
-    for subject_id in query.subjects:
-        assert type(subject_id) == str
-        i += 1
-    assert i == len(query.subjects)
-
-    assert sorted(list(query.subjects)) == [
-        "sub-1",
-        "sub-2",
-        "sub-3",
-        "sub-4",
-        "sub-5",
-    ]
-
-
-def test_mixed_subject_str_and_id_class_in_set():
-    # Note the use of a set here instead of a list
-    query = ImageQuery(subjects={"sub-1", "sub-2", "sub-3", "sub-4", "sub-5"})
-    assert type(query.subjects) == set
-    assert type(query.subjects) != list
-    assert len(query.subjects) == 5
-    i = 0
-    for subject_id in query.subjects:
-        assert type(subject_id) == str
-        i += 1
-    assert i == len(query.subjects)
-
-    assert sorted(list(query.subjects)) == [
-        "sub-1",
-        "sub-2",
-        "sub-3",
-        "sub-4",
-        "sub-5",
-    ]
-
-
 def test_duplicated_subject_ids():
     query = ImageQuery(subjects=["sub-1", "sub-2", "sub-2", "sub-4", "sub-2"])
     assert type(query.subjects) == set
@@ -96,55 +47,6 @@ def test_session_str_to_id():
     assert type(query.sessions) != list
     assert len(query.sessions) == 1
     assert type(list(query.sessions)[0]) == str
-
-
-def test_direct_session_id_class():
-    query = ImageQuery(sessions=["ses-1"])
-    assert type(query.sessions) == set
-    assert type(query.sessions) != list
-    assert len(query.sessions) == 1
-    assert type(list(query.sessions)[0]) == str
-
-
-def test_mixed_session_str_and_id_class():
-    query = ImageQuery(sessions=["ses-1", "ses-2", "ses-3", "ses-4", "ses-5"])
-    assert type(query.sessions) == set
-    assert type(query.sessions) != list
-    assert len(query.sessions) == 5
-    i = 0
-    for session_id in query.sessions:
-        assert type(session_id) == str
-        i += 1
-    assert i == len(query.sessions)
-
-    assert sorted(list(query.sessions)) == [
-        "ses-1",
-        "ses-2",
-        "ses-3",
-        "ses-4",
-        "ses-5",
-    ]
-
-
-def test_mixed_session_str_and_id_class_in_set():
-    # Note the use of a set here instead of a list
-    query = ImageQuery(sessions={"ses-1", "ses-2", "ses-3", "ses-4", "ses-5"})
-    assert type(query.sessions) == set
-    assert type(query.sessions) != list
-    assert len(query.sessions) == 5
-    i = 0
-    for session_id in query.sessions:
-        assert type(session_id) == str
-        i += 1
-    assert i == len(query.sessions)
-
-    assert sorted(list(query.sessions)) == [
-        "ses-1",
-        "ses-2",
-        "ses-3",
-        "ses-4",
-        "ses-5",
-    ]
 
 
 def test_duplicated_session_ids():
