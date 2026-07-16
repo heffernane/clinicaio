@@ -33,6 +33,8 @@ class Image:
     nifti_extension: FileExtension
     entities: Entities
     scan_info: ImageScanInfo
+    """Non-empty only if enabled when reading the dataset with :py:meth:`BIDSDataset.populate_from_dir() <clinicaio.dataset.BIDSDataset.populate_from_dir>`."""
+
     suffix: Optional[Suffix] = None
 
     @cached_property

@@ -28,6 +28,8 @@ class Session:
 
     id: Optional[SessionId]
     info: SessionInfo
+    """Non-empty only if enabled when reading the dataset with :py:meth:`BIDSDataset.populate_from_dir() <clinicaio.dataset.BIDSDataset.populate_from_dir>`."""
+
     _images: dict[DataType, list[Image]] = field(default_factory=lambda: {})
 
     def _get_full_path(self) -> Path:

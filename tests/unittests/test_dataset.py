@@ -1,5 +1,6 @@
 from pathlib import Path
 from re import escape
+from typing import Any, Callable, Optional
 
 import pytest
 from _utils import _get_dataset_description, _make_tsv, _setup_dataset_description
@@ -579,7 +580,54 @@ def test_read_dataset_str_path(fakefs: FakeFilesystem):
     assert len(images) == 1
     assert images[0].get_nifti_image_path() == nifti_path
 
+
 def test_dataset_init_with_str_path(fakefs: FakeFilesystem):
     dataset = BIDSDataset("/tmp/bids_test", _get_dataset_description())
     assert dataset.bids_path == Path("/tmp/bids_test")
     assert dataset.description == _get_dataset_description()
+
+
+@pytest.mark.parametrize(
+    ["populate_dataset", "err_msg"],
+    [
+        (
+            lambda path: BIDSDataset.populate_from_dir(path, subjects_info=True),
+            "the dataframe did not have the required 'participant_id' column",
+        ),
+        (
+            lambda path: BIDSDataset.populate_from_dir(path, sessions_info=True),
+            "the dataframe did not have the required 'session_id' column",
+        ),
+        (
+            lambda path: BIDSDataset.populate_from_dir(path, image_scans_info=True),
+            "the dataframe did not have the required 'filename' column",
+        ),
+        (
+            lambda path: BIDSDataset.populate_from_dir(path),
+            None,
+        ),
+    ],
+)
+def test_dataset_populate_no_info_by_default(
+    fakefs: FakeFilesystem,
+    populate_dataset: Callable[[Path], Any],
+    err_msg: Optional[str],
+):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+
+    # note: missing participant_id column
+    fakefs.create_file(bids_path / "participants.tsv", contents="a,b\n1,2")
+    # note: missing session_id column
+    fakefs.create_file(bids_path / "sub-A/sub-A_sessions.tsv", contents="a,b\n1,2")
+    # note: missing filename column
+    fakefs.create_file(
+        bids_path / "sub-A/ses-1/sub-A_ses-1_scans.tsv", contents="a,b\n1,2"
+    )
+
+    if err_msg is None:
+        populate_dataset(bids_path)
+    else:
+        with pytest.raises(Exception, match=escape(err_msg)):
+            populate_dataset(bids_path)

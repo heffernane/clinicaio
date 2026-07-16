@@ -192,9 +192,9 @@ class BIDSDataset:
         cls,
         bids_dir: str | Path,
         *,
-        subjects_info: bool,
-        sessions_info: bool,
-        image_scans_info: bool,
+        subjects_info: bool = False,
+        sessions_info: bool = False,
+        image_scans_info: bool = False,
         report_unhandled_entries: Optional[Callable[[list[str]], None]] = None,
     ) -> BIDSDataset:
         """

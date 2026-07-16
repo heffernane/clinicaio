@@ -31,6 +31,8 @@ class Subject:
     # https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/data-summary-files.html#participants-file
     # from participants.tsv, matched by participant_id, if available (all Optional[Type] = None, if line missing or n/a value)
     info: SubjectInfo
+    """Non-empty only if enabled when reading the dataset with :py:meth:`BIDSDataset.populate_from_dir() <clinicaio.dataset.BIDSDataset.populate_from_dir>`."""
+
     _sessions: Session | dict[SessionId, Session] = field(default_factory=lambda: {})
 
     def _get_full_path(self) -> Path:
