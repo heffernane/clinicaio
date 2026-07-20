@@ -1,5 +1,5 @@
 Introduction
-------------
+============
 
 The `Brain Imaging Data Structure (BIDS) <https://bids-specification.readthedocs.io/en/stable/>`__
 format defines a way to organize and describe brain imaging data, which themselves are in NIFTI format.
@@ -77,7 +77,7 @@ for example :py:meth:`~clinicaio.dataset.BIDSDataset.subject_by_id` will be ``O(
 a ``for`` loop will be ``O(n)``.
 
 Examples
---------
+^^^^^^^^
 
 * :doc:`/examples/assorted_queries`
 
@@ -95,7 +95,7 @@ the BIDS will not be valid. Once this is done the dataset can be written using
 on the dataset.
 
 Examples
---------
+^^^^^^^^
 
 * :doc:`/examples/demo_BIDS_write_images`
 
