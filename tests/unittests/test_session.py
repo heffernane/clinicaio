@@ -438,3 +438,98 @@ def test_invalid_image_filename(fakefs: FakeFilesystem):
             sessions_info=False,
             image_scans_info=False,
         )
+
+
+def test_read_scans_tsv_img_no_sub_ses_prefix(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz")
+
+    fakefs.create_file(
+        bids_path / "sub-1/ses-A/sub-1_ses-A_scans.tsv",
+        contents="filename\ta\nanat/task-rest_sfx.nii.gz\t3",
+    )
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "expected image basename task-rest_sfx.nii.gz of filename anat/task-rest_sfx.nii.gz in dataframe to have prefix sub-1_ses-A_"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(bids_path, image_scans_info=True)
+
+
+def test_read_scans_tsv_img_invalid_filename(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz")
+
+    fakefs.create_file(
+        bids_path / "sub-1/ses-A/sub-1_ses-A_scans.tsv",
+        # Note: the invalid é character
+        contents="filename\ta\nanat/sub-1_ses-A_task-é_sfx.nii.gz\t3",
+    )
+
+    with pytest.raises(
+        BIDSException, match=escape("BIDS label é must be all [a-zA-Z0-9] characters")
+    ):
+        BIDSDataset.populate_from_dir(bids_path, image_scans_info=True)
+
+
+def test_read_scans_tsv_img_no_file_ext(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz")
+
+    fakefs.create_file(
+        bids_path / "sub-1/ses-A/sub-1_ses-A_scans.tsv",
+        # Note: the missing file extension
+        contents="filename\ta\nanat/sub-1_ses-A_task-rest_sfx\t3",
+    )
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "found image filename anat/sub-1_ses-A_task-rest_sfx in dataframe without any file extension"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(bids_path, image_scans_info=True)
+
+
+def test_read_scans_tsv_non_existing_image(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz")
+
+    fakefs.create_file(
+        bids_path / "sub-1/ses-A/sub-1_ses-A_scans.tsv",
+        # Note: this image as-named does not exist in the dataset
+        contents="filename\ta\nanat/sub-1_ses-A_task-rest_trc-11CPIB_sfx.nii.gz\t3",
+    )
+
+    with pytest.raises(
+        BIDSException,
+        match=escape(
+            "could not find image for filename anat/sub-1_ses-A_task-rest_trc-11CPIB_sfx.nii.gz in dataframe"
+        ),
+    ):
+        BIDSDataset.populate_from_dir(bids_path, image_scans_info=True)
+
+
+def test_read_scans_tsv_ignore_non_nifti(fakefs: FakeFilesystem):
+    bids_path = Path("/tmp/bids_test")
+
+    _setup_dataset_description(fakefs, bids_path)
+    fakefs.create_file(bids_path / "sub-1/ses-A/anat/sub-1_ses-A_task-rest_sfx.nii.gz")
+
+    fakefs.create_file(
+        bids_path / "sub-1/ses-A/sub-1_ses-A_scans.tsv",
+        # Note: this image as-named does not exist in the dataset, but the file extension is not NIFTI so it's ignored
+        contents="filename\ta\nanat/sub-1_ses-A_task-rest_trc-11CPIB_sfx.tsv\t3",
+    )
+
+    BIDSDataset.populate_from_dir(bids_path, image_scans_info=True)
