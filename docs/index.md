@@ -7,6 +7,9 @@ This is the documentation for ClinicaIO, a Python library for input/output manag
 :hidden:
 :titlesonly:
 
+introduction
+examples/index
+reference/api/index
 changelog
 license
 ```
