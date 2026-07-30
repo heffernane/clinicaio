@@ -9,7 +9,7 @@
 project = "ClinicaIO"
 copyright = "2026, ARAMIS Lab"
 author = "ARAMIS Lab"
-release = "0.1.0"
+release = "1.0.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
