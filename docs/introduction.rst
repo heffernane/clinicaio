@@ -1,7 +1,7 @@
 Introduction
 ============
 
-The `Brain Imaging Data Structure (BIDS) <https://bids-specification.readthedocs.io/en/stable/>`__
+The `Brain Imaging Data Structure (BIDS) <https://bids.neuroimaging.io>`__
 format defines a way to organize and describe brain imaging data, which themselves are in NIFTI format.
 Concretely BIDS defines a standard way to organize and name folders and image files as well as defining
 tabular (TSV) and JSON metadata that supplements them.
